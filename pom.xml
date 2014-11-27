@@ -14,10 +14,48 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.sos-berlin.jobscheduler</groupId>
+			<artifactId>sos-scheduler</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.sos-berlin.jobscheduler</groupId>
 			<artifactId>hibernate-commons</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>com.sos-berlin.jobscheduler</groupId>
+			<artifactId>jobscheduler-helper</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.sos-berlin.commons</groupId>
+			<artifactId>sos-xml</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		
+		<dependency>
+  			<groupId>com.googlecode.jsendnsca</groupId>
+  			<artifactId>jsendnsca</artifactId>
+  			<version>2.0.1</version>
+		</dependency>
+		
 	</dependencies>
+	
+	<repositories>
+        <repository>
+            <id>jsendnsca</id>
+            <name>pentaho googlecode jsendnsca Repository</name>
+            <url>http://repository.pentaho.org/artifactory/repo/com/googlecode/jsendnsca/jsendnsca/2.0.1/ </url>
+        </repository>
+    </repositories>
 
 
 </project>
