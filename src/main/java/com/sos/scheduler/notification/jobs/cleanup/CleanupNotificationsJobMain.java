@@ -4,7 +4,6 @@ package com.sos.scheduler.notification.jobs.cleanup;
 
 import org.apache.log4j.Logger;
 import com.sos.JSHelper.Basics.JSToolBox;
-import com.sos.JSHelper.Logging.Log4JHelper;
 
 
 /**
