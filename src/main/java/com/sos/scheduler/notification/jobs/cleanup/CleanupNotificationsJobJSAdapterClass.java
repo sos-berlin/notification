@@ -27,6 +27,7 @@ import com.sos.JSHelper.Exceptions.JobSchedulerException;
  * \endverbatim
  */
 public class CleanupNotificationsJobJSAdapterClass extends JobSchedulerJobAdapter  {
+	@SuppressWarnings("unused")
 	private static Logger		logger			= Logger.getLogger(CleanupNotificationsJobJSAdapterClass.class);
 
 	CleanupNotificationsJob objR = null;
@@ -84,14 +85,14 @@ public class CleanupNotificationsJobJSAdapterClass extends JobSchedulerJobAdapte
 	public boolean spooler_process() throws Exception {
 		try {
 			super.spooler_process();
-			doProcessing();
+			objR.Execute();
 		}
 		catch (Exception e) {
             throw new JobSchedulerException("Fatal Error:" + e.getMessage(), e);
    		}
         return signalSuccess();
 
-	} // spooler_process
+	}
 
 	/**
 	 * 
@@ -107,14 +108,5 @@ public class CleanupNotificationsJobJSAdapterClass extends JobSchedulerJobAdapte
 			spooler_log.warn(ex.getMessage());
 		}
 	}
-
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	private void doProcessing() throws Exception {
-		objR.Execute();
-	}
-
 }
 

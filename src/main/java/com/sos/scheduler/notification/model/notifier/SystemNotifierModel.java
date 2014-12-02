@@ -37,6 +37,9 @@ public class SystemNotifierModel extends NotificationModel {
 	final Logger logger = LoggerFactory.getLogger(SystemNotifierModel.class);
 	private Spooler spooler;
 	
+	private SystemNotifierJobOptions options;
+	private String systemId;
+	
 	private ArrayList<ElementNotificationJobChain> monitorOnErrorJobChains;
 	private ArrayList<ElementNotificationJobChain> monitorOnSuccessJobChains;
 	private ArrayList<ElementNotificationTimer> monitorOnErrorTimers;
@@ -47,27 +50,16 @@ public class SystemNotifierModel extends NotificationModel {
 	private int coundSendSkip = 0;
 	private int countSendTotal = 0;
 	
-	
-	private SystemNotifierJobOptions options = null;
-	
-	
-	
 	/**
 	 * 
-	 * @param opt
 	 */
-	public SystemNotifierModel(SystemNotifierJobOptions opt){
-		this.options = opt;
+	public SystemNotifierModel(){
 	}
 	
-	/**
-	 * 
-	 */
-	@Override
-	public void init() throws Exception{
-		logger.info(String.format("init"));
-		
-		super.doInit(this.options.hibernate_configuration_file.Value(),false);
+	public void init(SystemNotifierJobOptions opt, DBLayerSchedulerMon db,Spooler sp) throws Exception{
+		super.init(db);
+		this.options = opt;
+		this.spooler = sp;
 	}
 	
 	/**
@@ -97,27 +89,35 @@ public class SystemNotifierModel extends NotificationModel {
 	private void initConfig() throws Exception{
 		String functionName = "initConfig";
 		
-		String systemId = this.options.system_id.Value();
-		if(SOSString.isEmpty(systemId)){
-			throw new Exception(String.format("missing system_id"));
-		}
-		
-		logger.info(String.format("%s: system id = %s",
-				functionName,
-				systemId));
-		
-		File schemaFile = new File(this.options.configuration_schema_file.Value());
+		File schemaFile = new File(this.options.schema_configuration_file.Value());
 		if(!schemaFile.exists()){
-			throw new Exception(String.format("schema file not found: %s",schemaFile.getAbsolutePath()));
+			throw new Exception(String.format("%s: schema file not found: %s",
+					functionName,
+					schemaFile.getAbsolutePath()));
 		}
 		
-		File xmlFile = getSystemConfigurationFile(schemaFile,systemId);
-		if(!xmlFile.exists()){
-			throw new Exception(String.format("xml file not found: %s",xmlFile.getAbsolutePath()));
+		File systemFile = new File(this.options.system_configuration_file.Value());
+		if(!systemFile.exists()){
+			throw new Exception(String.format("%s: system configuration file not found: %s",
+					functionName,
+					systemFile.getAbsolutePath()));
 		}
-		SOSXMLXPath xpath = new SOSXMLXPath(xmlFile.getAbsolutePath());
+		
+		logger.info(String.format("%s: read configuration file %s",
+				functionName,
+				systemFile.getAbsolutePath()));
+		
+		SOSXMLXPath xpath = new SOSXMLXPath(systemFile.getAbsolutePath());
 		
 		this.initMonitorObjects();
+		
+		this.systemId = NotificationXmlHelper.getSystemMonitorNotificationId(xpath);
+		if(SOSString.isEmpty(this.systemId)){
+			throw new Exception(String.format("systemId is NULL"));
+		}
+		logger.info(String.format("%s: system id = %s",
+				functionName,
+				this.systemId));
 		
 		NodeList monitorsOnError = NotificationXmlHelper.selectNotificationMonitorOnErrorDefinitions(xpath);
 		this.setMonitorObjects(xpath, monitorsOnError, this.monitorOnErrorJobChains,this.monitorOnErrorTimers);
@@ -170,7 +170,8 @@ public class SystemNotifierModel extends NotificationModel {
 			DBItemSchedulerMonChecks check,
 			ElementNotificationTimer timer,
 			boolean isNotifyOnErrorService) throws Exception{
-		String functionName = "    executeNotifyTimer";
+		//Indent für die Ausgabe
+		String functionName = "  executeNotifyTimer";
 				
 		String serviceName = (isNotifyOnErrorService) ? timer.getMonitor().getServiceNameOnError() : timer.getMonitor().getServiceNameOnSuccess();
 		EServiceStatus pluginStatus = (isNotifyOnErrorService) ? EServiceStatus.CRITICAL : EServiceStatus.OK;
@@ -279,6 +280,19 @@ public class SystemNotifierModel extends NotificationModel {
 			return;
 		}
 		
+		if(sm.getAcknowledged()){
+			this.coundSendSkip++;
+			logger.debug(
+					String.format("%s: skip notify timer (is acknowledged): id = %s, serviceName = %s, notifications = %s, acknowledged = %s",
+					functionName,
+					sm.getId(),
+					sm.getServiceName(),
+					sm.getNotifications(),
+					sm.getAcknowledged()
+					));
+			return;
+		}
+		
 		if(sm.getNotifications() >= maxNotifications){
 			this.setMaxNotifications(sm);
 			this.coundSendSkip++;
@@ -378,8 +392,6 @@ public class SystemNotifierModel extends NotificationModel {
 	private void executeNotifySuccess(String systemId,DBItemSchedulerMonNotifications notification,ElementNotificationJobChain jc) throws Exception{
 		String functionName = "executeNotifySuccess";
 		
-		this.countSendTotal++;
-		
 		String serviceName = jc.getMonitor().getServiceNameOnSuccess();
 		Long checkId = new Long(0);
 		String stepFrom = jc.getStepFrom();
@@ -423,7 +435,7 @@ public class SystemNotifierModel extends NotificationModel {
 					true);
 		}
 		/**
-		// recovered, acknowledged werden nicht berücksichtigt
+		// recovered, acknowledged???? werden nicht berücksichtigt
 		if(!sm.getSuccess() || (sm.getSuccess() && (sm.getNotifications() < maxNotifications ))){
 			doNotify = true;
 		}
@@ -438,6 +450,19 @@ public class SystemNotifierModel extends NotificationModel {
 					sm.getServiceName(),
 					sm.getNotifications(),
 					sm.getMaxNotifications()
+					));
+			return;
+		}
+		
+		if(sm.getAcknowledged()){
+			this.coundSendSkip++;
+			logger.debug(
+					String.format("%s: skip notify success (is acknowledged): id = %s, serviceName = %s, notifications = %s, acknowledged = %s",
+					functionName,
+					sm.getId(),
+					sm.getServiceName(),
+					sm.getNotifications(),
+					sm.getAcknowledged()
 					));
 			return;
 		}
@@ -598,18 +623,19 @@ public class SystemNotifierModel extends NotificationModel {
 	 * @throws Exception
 	 */
 	private void notifySuccess(String systemId,ArrayList<ElementNotificationJobChain> jobChains) throws Exception{
-		//Indent für die Ausgabe
-		String functionName = "  notifySuccess";
+		String functionName = "notifySuccess";
 		
 		List<DBItemSchedulerMonNotifications> result = this.getDbLayer().getNotificationsForNotifySuccess();
-		logger.info(String.format("%s: found %s notifications for success in the db",
+		logger.info(String.format("%s: found %s \"service_name_on_success\" definitions and %s notifications for success in the db",
 				functionName,
+				jobChains.size(),
 				result.size()));
 		
 		this.initSendCounters();
 		
 		for(DBItemSchedulerMonNotifications notification : result){
 			for(int i=0;i<jobChains.size();i++){
+				this.countSendTotal++;
 				ElementNotificationJobChain jc = jobChains.get(i);
 				if(this.checkDoNotification(notification, jc)){
 					this.executeNotifySuccess(systemId,notification,jc);
@@ -620,7 +646,7 @@ public class SystemNotifierModel extends NotificationModel {
 			}
 		}
 		
-		logger.info(String.format("%s: total to send = %s: sended = %s, error = %s, skipped = %s",
+		logger.info(String.format("%s: total checked = %s: sended = %s, error = %s, skipped = %s",
 				functionName,
 				this.countSendTotal,
 				this.countSendSuccess,
@@ -639,21 +665,22 @@ public class SystemNotifierModel extends NotificationModel {
 	private boolean checkDoNotificationTimer(
 			DBItemSchedulerMonChecks check,
 			ElementNotificationTimer timer){
-		String functionName = " checkDoNotificationTimer";
+		String functionName = "  checkDoNotificationTimer";
 		
 		boolean notify = true;
 		
 		String name = timer.getName();
+		if(!check.getName().equals(name)){
+			notify = false;
+		}
 		
-		logger.debug(String.format("%s: check (name = %s) check with configured (name = %s)",
+		logger.debug(String.format("%s: %s. check db(name = %s) and configured(name = %s)",
 				functionName,
+				notify ? "ok" : "skip",
 				check.getName(),
 				name
 				));
 		
-		if(!check.getName().equals(name)){
-			notify = false;
-		}
 	return notify;
 	}
 	
@@ -671,14 +698,6 @@ public class SystemNotifierModel extends NotificationModel {
 		
 		String schedulerId = jc.getSchedulerId();
 		String jobChain    = jc.getName();
-		
-		logger.debug(String.format("%s: notification (schedulerId = %s, jobChain = %s) check with configured (schedulerId = %s, jobChain = %s)",
-				functionName,
-				notification.getSchedulerId(),
-				notification.getJobChainName(),
-				schedulerId,
-				jobChain
-				));
 		
 		if(!schedulerId.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME)){
 			try{
@@ -709,6 +728,15 @@ public class SystemNotifierModel extends NotificationModel {
 				}
 			}	
 		}
+		
+		logger.debug(String.format("%s: %s. check db(schedulerId = %s, jobChain = %s) and configured(schedulerId = %s, jobChain = %s)",
+				functionName,
+				notify ? "ok" : "skip",
+				notification.getSchedulerId(),
+				notification.getJobChainName(),
+				schedulerId,
+				jobChain
+				));
 	return notify;
 	}
 	
@@ -720,9 +748,8 @@ public class SystemNotifierModel extends NotificationModel {
 	 * @throws Exception
 	 */
 	private void executeNotifyRecovered(String systemId,DBItemSchedulerMonNotifications notification,ElementNotificationJobChain jc) throws Exception{
-		String functionName = "executeNotifyRecovered";
-		
-		this.countSendTotal++;
+		//Indent für die Ausgabe
+		String functionName = "  executeNotifyRecovered";
 		
 		String serviceName = jc.getMonitor().getServiceNameOnError();
 		Long checkId = new Long(0);
@@ -753,14 +780,15 @@ public class SystemNotifierModel extends NotificationModel {
 		if(sm == null){
 			this.coundSendSkip++;
 			logger.debug(
-					String.format("%s: skip notify recovered (system notification not found): systemId = %s, serviceName = %s, notificationId = %s, checkId = %s, stepFrom = %s, stepTo = %s",
+					String.format("%s: skip notify recovered (system notification not found): systemId = %s, serviceName = %s, notificationId = %s, checkId = %s, stepFrom = %s, stepTo = %s, excludedSteps = %s",
 					functionName,
 					systemId,
 					serviceName,
 					notification.getId(),
 					checkId,
 					stepFrom,
-					stepTo));
+					stepTo,
+					jc.getExcludedStepsAsString()));
 			return;
 		}
 		
@@ -841,18 +869,19 @@ public class SystemNotifierModel extends NotificationModel {
 	 * @throws Exception
 	 */
 	private void notifyRecovered(String systemId,ArrayList<ElementNotificationJobChain> jobChains) throws Exception{
-		//Indent für die Ausgabe
-		String functionName = "  notifyRecovered";
+		String functionName = "notifyRecovered";
 		
 		List<DBItemSchedulerMonNotifications> result = this.getDbLayer().getNotificationsForNotifyRecovered();
-		logger.info(String.format("%s: found %s notifications for recovery in the db",
+		logger.info(String.format("%s: found %s \"service_name_on_error\" definitions and %s notifications for recovery in the db",
 				functionName,
+				jobChains.size(),
 				result.size()));
 		
 		this.initSendCounters();
 		
 		for(DBItemSchedulerMonNotifications notification : result){
 			for(int i=0;i<jobChains.size();i++){
+				this.countSendTotal++;
 				ElementNotificationJobChain jc = jobChains.get(i);
 				if(this.checkDoNotification(notification, jc)){
 					this.executeNotifyRecovered(systemId,notification,jc);
@@ -863,7 +892,7 @@ public class SystemNotifierModel extends NotificationModel {
 			}
 		}
 		
-		logger.info(String.format("%s: total to send = %s: sended = %s, error = %s, skipped = %s",
+		logger.info(String.format("%s: total checked = %s: sended = %s, error = %s, skipped = %s",
 				functionName,
 				this.countSendTotal,
 				this.countSendSuccess,
@@ -882,7 +911,6 @@ public class SystemNotifierModel extends NotificationModel {
 	private void executeNotifyError(String systemId,DBItemSchedulerMonNotifications notification,ElementNotificationJobChain jc) throws Exception{
 		String functionName = "executeNotifyError";
 		
-		this.countSendTotal++;
 		String serviceName = jc.getMonitor().getServiceNameOnError();
 		Long checkId = new Long(0);
 		String stepFrom = jc.getStepFrom();
@@ -1138,12 +1166,13 @@ public class SystemNotifierModel extends NotificationModel {
 	private void notifyTimer(String systemId,
 			ArrayList<ElementNotificationTimer> timersOnSuccess,
 			ArrayList<ElementNotificationTimer> timersOnError) throws Exception{
-		//Indent für die Ausgabe
-		String functionName = "  notifyTimer";
+		String functionName = "notifyTimer";
 		
 		List<DBItemSchedulerMonChecks> result = this.getDbLayer().getChecksForNotifyTimer();
-		logger.info(String.format("%s: found %s checks for timers in the db",
+		logger.info(String.format("%s: found %s \"service_name_on_success\" and %s \"service_name_on_error\" timer definitions and %s checks for timers in the db",
 				functionName,
+				timersOnSuccess.size(),
+				timersOnError.size(),
 				result.size()));
 		
 		this.initSendCounters();
@@ -1177,7 +1206,7 @@ public class SystemNotifierModel extends NotificationModel {
 			}
 		}
 		
-		logger.info(String.format("%s: total to send = %s: sended = %s, error = %s, skipped = %s",
+		logger.info(String.format("%s: total checked = %s: sended = %s, error = %s, skipped = %s",
 				functionName,
 				this.countSendTotal,
 				this.countSendSuccess,
@@ -1194,18 +1223,19 @@ public class SystemNotifierModel extends NotificationModel {
 	 * @throws Exception
 	 */
 	private void notifyError(String systemId,ArrayList<ElementNotificationJobChain> jobChains) throws Exception{
-		//Indent für die Ausgabe
-		String functionName = "  notifyError";
+		String functionName = "notifyError";
 		
 		List<DBItemSchedulerMonNotifications> result = this.getDbLayer().getNotificationsForNotifyError();
-		logger.info(String.format("%s: found %s notifications for error in the db",
+		logger.info(String.format("%s: found %s \"service_name_on_error\" definitions and %s notifications for error in the db",
 				functionName,
+				jobChains.size(),
 				result.size()));
 		
 		this.initSendCounters();
 		
 		for(DBItemSchedulerMonNotifications notification : result){
 			for(int i=0;i<jobChains.size();i++){
+				this.countSendTotal++;
 				ElementNotificationJobChain jc = jobChains.get(i);
 				if(this.checkDoNotification(notification, jc)){
 					this.executeNotifyError(systemId,notification,jc);
@@ -1216,7 +1246,7 @@ public class SystemNotifierModel extends NotificationModel {
 			}
 		}
 		
-		logger.info(String.format("%s: total to send = %s: sended = %s, error = %s, skipped = %s",
+		logger.info(String.format("%s: total checked = %s: sended = %s, error = %s, skipped = %s",
 				functionName,
 				this.countSendTotal,
 				this.countSendSuccess,
@@ -1233,12 +1263,9 @@ public class SystemNotifierModel extends NotificationModel {
 		this.initConfig();
 		
 		String functionName = "process";
-		String systemId = this.options.system_id.Value();
+		String systemId = this.systemId;
 		
     	if(this.monitorOnSuccessJobChains != null && this.monitorOnSuccessJobChains.size() > 0){
-     		logger.info(String.format("%s: notify success. found %s \"service_name_on_success\" definitions",
-     				functionName,
-     				this.monitorOnSuccessJobChains.size()));
      	 	this.notifySuccess(systemId,this.monitorOnSuccessJobChains);		
     	}
     	else{
@@ -1246,10 +1273,6 @@ public class SystemNotifierModel extends NotificationModel {
     	}
     	
     	if(this.monitorOnErrorJobChains != null && this.monitorOnErrorJobChains.size() > 0){
-    		logger.info(String.format("%s: notify recovery & notify error. found %s \"service_name_on_error\" definitions",
-    				functionName,
-    				this.monitorOnErrorJobChains.size()));
-    	    
     		this.notifyRecovered(systemId,this.monitorOnErrorJobChains);
     		this.notifyError(systemId,this.monitorOnErrorJobChains);
     	}
@@ -1258,11 +1281,6 @@ public class SystemNotifierModel extends NotificationModel {
     	}
     	
     	if(this.monitorOnSuccessTimers.size() > 0 || this.monitorOnErrorTimers.size() > 0){
-    		logger.info(String.format("%s: notify timer. found %s \"service_name_on_success\" and %s \"service_name_on_error\" timer definitions",
-    				functionName,
-    				this.monitorOnSuccessTimers.size(),
-    				this.monitorOnErrorTimers.size()));
-    	    
     		this.notifyTimer(systemId,this.monitorOnSuccessTimers,this.monitorOnErrorTimers);
     	}
     	else{
@@ -1280,13 +1298,5 @@ public class SystemNotifierModel extends NotificationModel {
 	public Spooler getSpooler() {
 		return spooler;
 	}
-
-	/**
-	 * 
-	 * @param spooler
-	 */
-	public void setSpooler(Spooler spooler) {
-		this.spooler = spooler;
-	}
-
+	
 }

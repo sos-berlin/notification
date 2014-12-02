@@ -2,12 +2,10 @@
 
 package com.sos.scheduler.notification.jobs.history;
 
-import java.util.ArrayList;
-
 import org.apache.log4j.Logger;
 
 import com.sos.JSHelper.Basics.JSJobUtilitiesClass;
-import com.sos.scheduler.notification.model.INotificationModel;
+import com.sos.scheduler.notification.helper.DBConnector;
 import com.sos.scheduler.notification.model.history.CheckHistoryModel;
 
 /**
@@ -28,8 +26,7 @@ import com.sos.scheduler.notification.model.history.CheckHistoryModel;
 public class CheckHistoryJob extends JSJobUtilitiesClass<CheckHistoryJobOptions> {
 	private final String					conClassName						= "CheckHistoryJob";  //$NON-NLS-1$
 	private static Logger		logger			= Logger.getLogger(CheckHistoryJob.class);
-
-	private INotificationModel model = null;
+	private DBConnector db;
 	/**
 	 * 
 	 * \brief CheckHistoryJob
@@ -42,23 +39,18 @@ public class CheckHistoryJob extends JSJobUtilitiesClass<CheckHistoryJobOptions>
 	}
 
 	public void init() throws Exception {
-		
-		this.model = new CheckHistoryModel(Options());
-		this.model.init();
+		this.db = new DBConnector();
+		this.db.connect(Options().hibernate_configuration_file.Value(), false);
 	}
 
 	
 	public void exit(){
 		final String conMethodName = conClassName + "::exit";  //$NON-NLS-1$
 		try {
-			this.model.exit();
+			this.db.disconnect();
 		} catch (Exception e) {
 			logger.warn(String.format("%s:%s",conMethodName,e.getMessage()));
 		}
-	}
-
-	public INotificationModel getModel(){
-		return this.model;
 	}
 		
 	/**
@@ -107,8 +99,10 @@ public class CheckHistoryJob extends JSJobUtilitiesClass<CheckHistoryJobOptions>
 			Options().CheckMandatory();
 			logger.debug(Options().toString());
 			
-			this.model.process();
-						
+			CheckHistoryModel model = new CheckHistoryModel();
+			model.init(Options(),this.db.getDbLayer());
+			model.process();
+			model.exit();
 		}
 		catch (Exception e) {
 			e.printStackTrace(System.err);

@@ -19,6 +19,7 @@ public class ElementNotificationJobChain {
 	private String stepFrom;
 	private String stepTo;
 	private ArrayList<String> excludedSteps;
+	private String excludedStepsAsString;
 	
 	public ElementNotificationJobChain(ElementNotificationMonitor monitor,Node jobChain){
 		this.monitor = monitor;
@@ -69,8 +70,10 @@ public class ElementNotificationJobChain {
 	 */
 	private void setExcludedSteps(Element jobChain){
 		this.excludedSteps = new ArrayList<String>();
+		this.excludedStepsAsString = "";
 		String es = NotificationXmlHelper.getExcludedSteps(jobChain);
 		if(!SOSString.isEmpty(es)){
+			this.excludedStepsAsString = es;
 			String[] arr = es.trim().split(";");
 			for(int i=0;i<arr.length;i++){
 				if(arr[i].trim().length() > 0){
@@ -82,5 +85,8 @@ public class ElementNotificationJobChain {
 	
 	public ArrayList<String> getExcludedSteps(){
 		return this.excludedSteps;
+	}
+	public String getExcludedStepsAsString(){
+		return this.excludedStepsAsString;
 	}
 }

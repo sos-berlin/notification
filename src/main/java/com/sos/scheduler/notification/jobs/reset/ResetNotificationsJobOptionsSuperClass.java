@@ -105,13 +105,13 @@ public class ResetNotificationsJobOptionsSuperClass extends JSOptionsClass {
 	
 	
 	/**
-	 * \var configuration_file :
+	 * \var system_configuration_file :
 	 * 
 	 * 
 	 */
-	@JSOptionDefinition(name = "configuration_file", description = "", key = "configuration_file", type = "SOSOptionString", mandatory = false)
-	public SOSOptionString configuration_file = new SOSOptionString(this,
-			conClassName + ".configuration_file", // HashMap-Key
+	@JSOptionDefinition(name = "system_configuration_file", description = "", key = "system_configuration_file", mandatory = false)
+	public SOSOptionString system_configuration_file = new SOSOptionString(this,
+			conClassName + ".system_configuration_file", // HashMap-Key
 			"", // Titel
 			"", // InitValue
 			"", // DefaultValue
@@ -119,7 +119,7 @@ public class ResetNotificationsJobOptionsSuperClass extends JSOptionsClass {
 	);
 
 	/**
-	 * \brief getconfiguration_file :
+	 * \brief getsystem_configuration_file :
 	 * 
 	 * \details
 	 * 
@@ -127,31 +127,31 @@ public class ResetNotificationsJobOptionsSuperClass extends JSOptionsClass {
 	 * \return
 	 * 
 	 */
-	public SOSOptionString getconfiguration_file() {
-		return this.configuration_file;
+	public SOSOptionString getsystem_configuration_file() {
+		return this.system_configuration_file;
 	}
 
 	/**
-	 * \brief setconfiguration_file :
+	 * \brief setsystem_configuration_file :
 	 * 
 	 * \details
 	 * 
 	 * 
-	 * @param configuration_file
+	 * @param system_configuration_file
 	 *            :
 	 */
-	public void setconfiguration_file(SOSOptionString p_configuration_file) {
-		this.configuration_file = p_configuration_file;
+	public void setsystem_configuration_file(SOSOptionString p_configuration_file) {
+		this.system_configuration_file = p_configuration_file;
 	}
 
 	/**
-	 * \var configuration_schema_file :
+	 * \var schema_configuration_file :
 	 * 
 	 * 
 	 */
-	@JSOptionDefinition(name = "configuration_schema_file", description = "", key = "configuration_schema_file", type = "SOSOptionString", mandatory = false)
-	public SOSOptionString configuration_schema_file = new SOSOptionString(this,
-			conClassName + ".configuration_schema_file", // HashMap-Key
+	@JSOptionDefinition(name = "schema_configuration_file", description = "", key = "schema_configuration_file", type = "SOSOptionString", mandatory = false)
+	public SOSOptionString schema_configuration_file = new SOSOptionString(this,
+			conClassName + ".schema_configuration_file", // HashMap-Key
 			"", // Titel
 			"", // InitValue
 			"", // DefaultValue
@@ -159,7 +159,7 @@ public class ResetNotificationsJobOptionsSuperClass extends JSOptionsClass {
 	);
 
 	/**
-	 * \brief getconfiguration_schema_file :
+	 * \brief getschema_configuration_file :
 	 * 
 	 * \details
 	 * 
@@ -167,21 +167,21 @@ public class ResetNotificationsJobOptionsSuperClass extends JSOptionsClass {
 	 * \return
 	 * 
 	 */
-	public SOSOptionString getconfiguration_schema_file() {
-		return this.configuration_schema_file;
+	public SOSOptionString getschema_configuration_file() {
+		return this.schema_configuration_file;
 	}
 
 	/**
-	 * \brief setconfiguration_schema_file :
+	 * \brief setschema_configuration_file :
 	 * 
 	 * \details
 	 * 
 	 * 
-	 * @param configuration_schema_file
+	 * @param schema_configuration_file
 	 *            :
 	 */
-	public void setconfiguration_schema_file(SOSOptionString p_configuration_schema_file) {
-		this.configuration_schema_file = p_configuration_schema_file;
+	public void setschema_configuration_file(SOSOptionString p_schema_configuration_file) {
+		this.schema_configuration_file = p_schema_configuration_file;
 	}
 	
 	

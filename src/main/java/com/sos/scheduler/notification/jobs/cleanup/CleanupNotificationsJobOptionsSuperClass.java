@@ -117,13 +117,13 @@ public class CleanupNotificationsJobOptionsSuperClass extends JSOptionsClass {
      * 
      *
      */
-        @JSOptionDefinition(name = "minutes", 
+        @JSOptionDefinition(name = "age", 
         description = "", 
-        key = "minutes", 
+        key = "age", 
         type = "SOSOptionInteger", 
         mandatory = false)
         
-        public SOSOptionInteger minutes = new SOSOptionInteger(this, conClassName + ".minutes", // HashMap-Key
+        public SOSOptionInteger age = new SOSOptionInteger(this, conClassName + ".age", // HashMap-Key
                                                                     "", // Titel
                                                                     "1440", // InitValue
                                                                     "1440", // DefaultValue
@@ -131,7 +131,7 @@ public class CleanupNotificationsJobOptionsSuperClass extends JSOptionsClass {
                         );
 
     /**
-     * \brief getminutes : 
+     * \brief getage : 
      * 
      * \details
      * 
@@ -139,20 +139,20 @@ public class CleanupNotificationsJobOptionsSuperClass extends JSOptionsClass {
      * \return 
      *
      */
-        public SOSOptionInteger  getminutes() {
-            return this.minutes;
+        public SOSOptionInteger  getage() {
+            return this.age;
         }
 
     /**
-     * \brief setminutes : 
+     * \brief setage : 
      * 
      * \details
      * 
      *
      * @param days : 
      */
-        public void setminutes (SOSOptionInteger p_minutes) { 
-            this.minutes = p_minutes;
+        public void setage (SOSOptionInteger p_age) { 
+            this.age = p_age;
         }
                         
          

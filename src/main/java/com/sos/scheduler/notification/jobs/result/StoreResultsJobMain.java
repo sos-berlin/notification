@@ -42,7 +42,7 @@ public class StoreResultsJobMain extends JSToolBox {
 	public final static void main(String[] pstrArgs) {
 
 		final String conMethodName = conClassName + "::Main"; //$NON-NLS-1$
-
+	
 		logger = Logger.getRootLogger();
 		logger.info("NotificationMonitor - Main"); //$NON-NLS-1$
 

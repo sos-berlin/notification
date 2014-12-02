@@ -5,7 +5,7 @@ package com.sos.scheduler.notification.jobs.result;
 import org.apache.log4j.Logger;
 
 import com.sos.JSHelper.Basics.JSJobUtilitiesClass;
-import com.sos.scheduler.notification.model.INotificationModel;
+import com.sos.scheduler.notification.helper.DBConnector;
 import com.sos.scheduler.notification.model.result.StoreResultsModel;
 
 /**
@@ -27,7 +27,7 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 	private final String					conClassName						= "StoreResultsJob";  //$NON-NLS-1$
 	private static Logger		logger			= Logger.getLogger(StoreResultsJob.class);
 	
-    private INotificationModel model = null;
+	private DBConnector db;
 
 	/**
 	 * 
@@ -45,9 +45,8 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 	 * @throws Exception
 	 */
 	public void init() throws Exception {
-		
-		this.model = new StoreResultsModel(Options());
-		this.model.init();
+		this.db = new DBConnector();
+		this.db.connect(Options().scheduler_notification_hibernate_configuration_file.Value(),true);
 	}
 
 	/**
@@ -56,7 +55,7 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 	public void exit(){
 		final String conMethodName = conClassName + "::exit";  //$NON-NLS-1$
 		try {
-			this.model.exit();
+			this.db.disconnect();
 		} catch (Exception e) {
 			logger.warn(String.format("%s:%s",conMethodName,e.getMessage()));
 		}
@@ -108,11 +107,11 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 			logger.debug(Options().toString());
 			
 			
-			if(this.model == null){
-				throw new Exception("this.model is NULL");
-			}
-			this.model.process();	
-		}
+			StoreResultsModel model = new StoreResultsModel();
+			model.init(Options(),this.db.getDbLayer());
+			model.process();
+			model.exit();
+		}	
 		catch (Exception e) {
 			e.printStackTrace(System.err);
 			logger.error(String.format("%s: %s",conMethodName, e));

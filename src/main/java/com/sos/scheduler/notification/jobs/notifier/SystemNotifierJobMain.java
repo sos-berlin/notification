@@ -24,8 +24,6 @@ import com.sos.JSHelper.Basics.JSToolBox;
 public class SystemNotifierJobMain extends JSToolBox {
 	private final static String					conClassName						= "SystemNotifierJobMain"; //$NON-NLS-1$
 	private static Logger		logger			= Logger.getLogger(SystemNotifierJobMain.class);
-	@SuppressWarnings("unused")	
-	
 	protected SystemNotifierJobOptions	objOptions			= null;
 
 	/**
@@ -43,8 +41,6 @@ public class SystemNotifierJobMain extends JSToolBox {
 
 		final String conMethodName = conClassName + "::Main"; //$NON-NLS-1$
 
-	
-		logger = Logger.getRootLogger();
 		logger.info("SystemNotifierJob - Main"); //$NON-NLS-1$
 
 		try {

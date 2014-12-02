@@ -10,6 +10,7 @@ import com.sos.JSHelper.Exceptions.JSExceptionMandatoryOptionMissing;
 import com.sos.JSHelper.Listener.JSListener;
 import com.sos.JSHelper.Options.JSOptionsClass;
 import com.sos.JSHelper.Options.SOSOptionBoolean;
+import com.sos.JSHelper.Options.SOSOptionInteger;
 import com.sos.JSHelper.Options.SOSOptionString;
 
 /**
@@ -144,13 +145,13 @@ public class CheckHistoryJobOptionsSuperClass extends JSOptionsClass {
 	}
 
 	/**
-	 * \var schema_file :
+	 * \var schema_configuration_file :
 	 * 
 	 * 
 	 */
-	@JSOptionDefinition(name = "configuration_schema_file", description = "", key = "configuration_schema_file", type = "SOSOptionString", mandatory = false)
-	public SOSOptionString configuration_schema_file = new SOSOptionString(this, conClassName
-			+ ".configuration_schema_file", // HashMap-Key
+	@JSOptionDefinition(name = "schema_configuration_file", description = "", key = "schema_configuration_file", type = "SOSOptionString", mandatory = false)
+	public SOSOptionString schema_configuration_file = new SOSOptionString(this, conClassName
+			+ ".schema_configuration_file", // HashMap-Key
 			"", // Titel
 			" ", // InitValue
 			"", // DefaultValue
@@ -158,7 +159,7 @@ public class CheckHistoryJobOptionsSuperClass extends JSOptionsClass {
 	);
 
 	/**
-	 * \brief getconfiguration_schema_file :
+	 * \brief getschema_configuration_file :
 	 * 
 	 * \details
 	 * 
@@ -166,21 +167,21 @@ public class CheckHistoryJobOptionsSuperClass extends JSOptionsClass {
 	 * \return
 	 * 
 	 */
-	public SOSOptionString getconfiguration_schema_file() {
-		return configuration_schema_file;
+	public SOSOptionString getschema_configuration_file() {
+		return schema_configuration_file;
 	}
 
 	/**
-	 * \brief setconfiguration_schema_file :
+	 * \brief setschema_configuration_file :
 	 * 
 	 * \details
 	 * 
 	 * 
-	 * @param configuration_schema_file
+	 * @param schema_configuration_file
 	 *            :
 	 */
-	public void setconfiguration_schema_file(SOSOptionString p_schema_file) {
-		this.configuration_schema_file = p_schema_file;
+	public void setschema_configuration_file(SOSOptionString p_schema_file) {
+		this.schema_configuration_file = p_schema_file;
 	}
 
 	/**
@@ -224,7 +225,48 @@ public class CheckHistoryJobOptionsSuperClass extends JSOptionsClass {
 	}
 
 	/**
-	 * \var query_db_dependent :
+	 * \var max_read_history_interval :
+	 * 
+	 * 
+	 */
+	@JSOptionDefinition(name = "max_history_age", description = "", key = "max_history_age", type = "SOSOptionInterval", mandatory = true)
+	public SOSOptionInteger max_history_age = new SOSOptionInteger(
+			this, conClassName + ".max_history_age", // HashMap-Key
+			"", // Titel
+			"60", // InitValue
+			"60", // DefaultValue
+			true // isMandatory
+	);
+
+	/**
+	 * \brief getmax_history_age :
+	 * 
+	 * \details
+	 * 
+	 * 
+	 * \return
+	 * 
+	 */
+	public SOSOptionInteger getmax_history_age() {
+		return max_history_age;
+	}
+
+	/**
+	 * \brief setmax_history_age :
+	 * 
+	 * \details
+	 * 
+	 * 
+	 * @param max_history_age
+	 *            :
+	 */
+	public void setmax_history_age(
+			SOSOptionInteger p_max_history_age) {
+		this.max_history_age = p_max_history_age;
+	}
+
+	/**
+	 * \var allow_db_dependent_queries :
 	 * 
 	 * 
 	 */

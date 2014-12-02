@@ -39,7 +39,7 @@ public class CheckHistoryModel extends NotificationModel {
 
 	final Logger logger = LoggerFactory.getLogger(CheckHistoryModel.class);
 
-	CheckHistoryJobOptions options = null;
+	private CheckHistoryJobOptions options;
 	private LinkedHashMap<String, ElementTimer> timers = null;
 	private LinkedHashMap<String, ArrayList<String>> jobChains = null;
 	private boolean checkInsertNotifications = true;
@@ -53,10 +53,8 @@ public class CheckHistoryModel extends NotificationModel {
 
 	/**
 	 * 
-	 * @param pOptions
 	 */
-	public CheckHistoryModel(CheckHistoryJobOptions opt) {
-		this.options = opt;
+	public CheckHistoryModel() {
 		this.plugins = new ArrayList<ICheckHistoryPlugin>();
 		this.timers = new LinkedHashMap<String, ElementTimer>();
 		this.jobChains = new LinkedHashMap<String,ArrayList<String>>();
@@ -77,14 +75,12 @@ public class CheckHistoryModel extends NotificationModel {
 	 * 
 	 * @throws Exception
 	 */
-	@Override
-	public void init() throws Exception {
-		logger.info(String.format("init"));
+	public void init(CheckHistoryJobOptions opt, DBLayerSchedulerMon db) throws Exception {
+		super.init(db);
 
-		super.doInit(this.options.hibernate_configuration_file.Value(), false);
-
+		this.options = opt;
+		
 		this.initConfig();
-
 		this.registerPlugins();
 		this.pluginsOnInit(this.timers, this.options, this.getDbLayer());
 	}
@@ -96,7 +92,7 @@ public class CheckHistoryModel extends NotificationModel {
 	public void initConfig() throws Exception {
 		File dir = null;
 
-		File schemaFile = new File(options.configuration_schema_file.Value());
+		File schemaFile = new File(options.schema_configuration_file.Value());
 
 		if (!schemaFile.exists()) {
 			throw new Exception(String.format("schema file not found: %s",
@@ -125,6 +121,8 @@ public class CheckHistoryModel extends NotificationModel {
 	 * @throws Exception
 	 */
 	private void readConfigFiles(File dir) throws Exception {
+		String functionName = "readConfigFiles";
+		
 		this.jobChains = new LinkedHashMap<String,ArrayList<String>>();
 		this.timers = new LinkedHashMap<String, ElementTimer>();
 		this.checkInsertNotifications = true;
@@ -132,13 +130,15 @@ public class CheckHistoryModel extends NotificationModel {
 		File[] files = getAllConfigurationFiles(dir);
 		if (files.length == 0) {
 			throw new Exception(String.format(
-					"configuration files not found. directory : %s",
+					"%s: configuration files not found. directory : %s",
+					functionName,
 					dir.getAbsolutePath()));
 		}
 
 		for (int i = 0; i < files.length; i++) {
 			File f = files[i];
-			logger.info(String.format("reading configuration file %s",
+			logger.info(String.format("%s: read configuration file %s",
+					functionName,
 					f.getAbsolutePath()));
 
 			SOSXMLXPath xpath = new SOSXMLXPath(f.getAbsolutePath());
@@ -148,7 +148,7 @@ public class CheckHistoryModel extends NotificationModel {
 		}
 
 		if(this.jobChains.size() == 0 && this.timers.size() == 0){
-			throw new Exception("jobChains or timers definitions not founded");
+			throw new Exception(String.format("%s: jobChains or timers definitions not founded",functionName));
 		}
 		
 	}
@@ -312,29 +312,49 @@ public class CheckHistoryModel extends NotificationModel {
 	
 	/**
 	 * 
+	 * @param dateTo
+	 * @return
+	 * @throws Exception
+	 */
+	private Date getLastNotificationDate(Date dateTo) throws Exception{
+		Date dateFrom = this.getDbLayer().getLastNotificationDate();
+		int maxAge = this.options.max_history_age.value();
+		
+		if(dateFrom != null){
+			Long startTimeMinutes = dateFrom.getTime() / 1000 / 60;
+			Long endTimeMinutes = dateTo.getTime() / 1000 / 60;
+			Long diffMinutes = endTimeMinutes - startTimeMinutes;
+			if(diffMinutes > maxAge){
+				dateFrom = null;
+			}
+		}
+		if(dateFrom == null){
+			dateFrom = DBLayerSchedulerMon.getDateTimeMinusMinutes(dateTo,maxAge);
+		}
+		return dateFrom;
+	}
+	
+	/**
+	 * 
 	 * @throws Exception
 	 */
 	@Override
 	public void process() throws Exception {
 		String functionName = "process";
-		
-		logger.info(String.format("%s: start",functionName));
-
 		super.process();
 
 		this.getDbLayer().beginTransaction();
 
 		logger.info(String.format("%s: bulk updateNotifications",functionName));
-		this.getDbLayer().updateNotifications(
-				this.options.allow_db_dependent_queries.value());
+		this.getDbLayer().updateNotifications(this.options.allow_db_dependent_queries.value());
 
 		logger.info(String
 				.format("%s: bulk setOrderNotificationsRecovered",functionName));
 		this.getDbLayer().setOrderNotificationsRecovered();
 		this.getDbLayer().commit();
 
-		Date dateFrom = this.getDbLayer().getLastNotificationDate();
 		Date dateTo = DBLayerSchedulerMon.getCurrentDateTime();
+		Date dateFrom = this.getLastNotificationDate(dateTo);
 		
 		
 		this.initCounters();
@@ -342,7 +362,7 @@ public class CheckHistoryModel extends NotificationModel {
 		List<DBItemSchedulerOrderStepHistory> steps = this.getDbLayer().getOrderStepsAsList(dateFrom, dateTo);
 		this.countTotal = steps.size();
 		logger.info(String
-				.format("%s: founded %s entries. getOrderStepsAsList (dateFrom = %s (UTC), dateTo = %s (UTC))",
+				.format("%s: found %s entries. getOrderStepsAsList (dateFrom = %s (UTC), dateTo = %s (UTC))",
 						functionName,
 						this.countTotal,
 						DBLayerSchedulerMon.getDateAsString(dateFrom),
@@ -519,9 +539,6 @@ public class CheckHistoryModel extends NotificationModel {
 		
 		this.pluginsOnProcess(this.timers, this.options, this.getDbLayer(),
 				dateFrom, dateTo);
-
-		logger.info(String.format("%s: end",functionName));
-
 	}
 
 	/**
@@ -669,7 +686,7 @@ public class CheckHistoryModel extends NotificationModel {
 				}
 			}
 		}
-		logger.info(String.format("plugins registered = %s",
+		logger.debug(String.format("plugins registered = %s",
 				this.plugins.size()));
 
 	}

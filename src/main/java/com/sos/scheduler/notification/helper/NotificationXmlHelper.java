@@ -11,6 +11,16 @@ import sos.xml.SOSXMLXPath;
 
 public class NotificationXmlHelper {
 
+	public static String getSystemMonitorNotificationId(SOSXMLXPath xpath) throws Exception{
+		if(xpath.root == null){
+			throw new Exception("xpath.root is NULL");
+		}
+		if(!xpath.root.getNodeName().equalsIgnoreCase("SystemMonitorNotification")){
+			throw new Exception(String.format("root is %s and not the SystemMonitorNotification Element",xpath.root.getNodeName()));
+		}
+		return xpath.root.getAttribute("id");
+	}
+	
 	public static NodeList selectNotificationJobChainDefinitions(SOSXMLXPath xpath) throws Exception{
 		
 		return xpath.selectNodeList("/SystemMonitorNotification/Notification/NotificationObjects/JobChain");

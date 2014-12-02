@@ -13,6 +13,7 @@ import com.sos.scheduler.notification.db.DBItemSchedulerMonNotifications;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonResults;
 import com.sos.scheduler.notification.db.DBItemSchedulerOrderHistory;
 import com.sos.scheduler.notification.db.DBItemSchedulerOrderStepHistory;
+import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
 import com.sos.scheduler.notification.jobs.result.StoreResultsJobOptions;
 import com.sos.scheduler.notification.model.NotificationModel;
 
@@ -24,27 +25,27 @@ import com.sos.scheduler.notification.model.NotificationModel;
 public class StoreResultsModel extends NotificationModel {
 
 	final Logger logger = LoggerFactory.getLogger(StoreResultsModel.class);
-	
-	StoreResultsJobOptions options = null;
+	private StoreResultsJobOptions options;
 	//Der Job läuft als Monitor, d.h. die Datenbank Session wird bereits vom "Haupt"-Job initialisiert
 	//Problem - aus irgendeinem Grund sind die neuen gemappten notification Klassen in der hibernate.cfg.xml Datei 
 	//bei der ersten Verbindung nicht bekannt
-	private boolean reconnect = true;
+	//private boolean reconnect = true;
 	
 	/**
 	 * 
-	 * @param pOptions
 	 */
-	public StoreResultsModel(StoreResultsJobOptions pOptions){
-    	this.options = pOptions;
+	public StoreResultsModel(){
     }
 	
 	/**
 	 * 
+	 * @param opt
+	 * @param db
+	 * @throws Exception
 	 */
-	@Override
-	public void init() throws Exception {
-		super.doInit(this.options.scheduler_notification_hibernate_configuration_file.Value(),reconnect);
+	public void init(StoreResultsJobOptions opt, DBLayerSchedulerMon db) throws Exception {
+		super.init(db);
+		this.options = opt;
 	}
 
 	/**

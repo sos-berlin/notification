@@ -23,56 +23,20 @@ public class NotificationModel implements INotificationModel {
 	
 	
 	@Override
-	public void init() throws Exception {
-		// TODO Auto-generated method stub
+	public void init(DBLayerSchedulerMon db) throws Exception {
+		this.dbLayer = db;
+		if(this.dbLayer == null){
+			throw new Exception("dbLayer is NULL");
+		}
 
 	}
 
-	/**
-	 * 
-	 * @param hibernateConfigFile
-	 * @param reconnect
-	 * @throws Exception
-	 */
-	public void doInit(String hibernateConfigFile, boolean reconnect)
-			throws Exception {
-		File file = new File(hibernateConfigFile);
-		if (!file.exists()) {
-			throw new Exception(String.format(
-					"not found hibernate config file = %s",
-					file.getAbsolutePath()));
-		}
-
-		logger.info(String.format("init connection with hibernate file = %s",
-				file.getAbsolutePath()));
-		try {
-			this.dbLayer = new DBLayerSchedulerMon(file);
-			if (reconnect) {
-				try {
-					if (this.dbLayer.getSession() != null) {
-						this.dbLayer.closeSession();
-					}
-				} catch (Exception ex) {
-					logger.info(String.format(
-							"dbLayer.closeSession exception : %s",
-							ex.getMessage()));
-				}
-			}
-			this.dbLayer.initSession();
-		} catch (Exception ex) {
-			throw new Exception(String.format("exception doInit : %s",
-					ex.getMessage()));
-		}
-	}
-
+	
 	/**
 	 * 
 	 */
 	@Override
 	public void process() throws Exception {
-		if (this.dbLayer == null) {
-			throw new Exception("dbLayer object is null");
-		}
 	}
 
 	/**
@@ -81,17 +45,8 @@ public class NotificationModel implements INotificationModel {
 	@Override
 	public void exit() throws Exception {
 		logger.debug(String.format("exit"));
-
-		if (this.dbLayer != null) {
-			this.dbLayer.closeSession();
-		}
-
 	}
 
-	/**
-	 * 
-	 */
-	@Override
 	public DBLayerSchedulerMon getDbLayer() {
 		return this.dbLayer;
 	}
@@ -139,15 +94,6 @@ public class NotificationModel implements INotificationModel {
 		return f.exists() ? f : null;
 	}
 	
-	/**
-	 * 
-	 * @param schemaFile
-	 * @param systemId
-	 * @return
-	 */
-	public static File getSystemConfigurationFile(File schemaFile,String systemId){
-		return new File(schemaFile.getParent(),"SystemMonitorNotification_"+systemId+".xml");
-	}
 	
 	/**
 	 * 
@@ -163,4 +109,5 @@ public class NotificationModel implements INotificationModel {
 		}
 		return null;
 	}
+	
 }

@@ -115,6 +115,8 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 			String jobChain,
 			String orderId) throws Exception {
 
+		String functionName = "getNotFinishedOrderStepHistory";
+		
 		StringBuffer sql = new StringBuffer("from "
 				+ DBITEM_SCHEDULER_ORDER_HISTORY + " oh ")
 				.append("left join fetch oh.schedulerOrderStepHistory osh ")
@@ -136,7 +138,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 		query.setParameter("orderId", orderId);
 
 		@SuppressWarnings("unchecked")
-		List<DBItemSchedulerOrderHistory> result = executeQueryList(query);
+		List<DBItemSchedulerOrderHistory> result = executeQueryList(functionName,sql,query);
 		if (result.size() > 0) {
 			return result.get(0);
 		}
@@ -166,12 +168,12 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 		
 		sql = new StringBuffer("delete from "+DBITEM_SCHEDULER_MON_SYSNOTIFICATIONS+" ")
 		.append("where notificationId not in (select id from "+DBITEM_SCHEDULER_MON_NOTIFICATIONS+") ");
-		count = session.createQuery(sql.toString()).executeUpdate();
-		logger.info(String.format("deleted %s = %s", DBITEM_SCHEDULER_MON_SYSNOTIFICATIONS,count));
+		int countS1 = session.createQuery(sql.toString()).executeUpdate();
 		
 		sql = new StringBuffer("delete from "+DBITEM_SCHEDULER_MON_SYSNOTIFICATIONS+" ")
 		.append("where checkId > 0 and checkId not in (select id from "+DBITEM_SCHEDULER_MON_CHECKS+") ");
-		count = session.createQuery(sql.toString()).executeUpdate();
+		int countS2 = session.createQuery(sql.toString()).executeUpdate();
+		count = countS1+countS2;
 		logger.info(String.format("deleted %s = %s", DBITEM_SCHEDULER_MON_SYSNOTIFICATIONS,count));
 	}
 			
@@ -182,7 +184,8 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	 * @return
 	 */
 	public int resetAcknowledged(String systemId,String serviceName){
-		
+		@SuppressWarnings("unused")
+		String functionName = "resetAcknowledged";
 		StringBuffer sql = new StringBuffer("update "
 				+ DBITEM_SCHEDULER_MON_SYSNOTIFICATIONS + " ")
 				.append("set acknowledged = 1 ")
@@ -209,7 +212,8 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	 */
 	public ScrollableResults getOrderStepsScrollable(Date dateFrom, Date dateTo)
 			throws Exception {
-
+		@SuppressWarnings("unused")
+		String functionName = "getOrderStepsScrollable";
 		StringBuffer sql = new StringBuffer("from "
 				+ DBITEM_SCHEDULER_ORDER_STEP_HISTORY + " sh ")
 				.append("left join fetch sh.schedulerOrderHistoryDBItem oh ")
@@ -245,7 +249,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerOrderStepHistory> getOrderStepsAsList(
 			Date dateFrom, Date dateTo) throws Exception {
-
+		String functionName = "getOrderStepsAsList";
 		StringBuffer sql = new StringBuffer("from "
 				+ DBITEM_SCHEDULER_ORDER_STEP_HISTORY + " sh ")
 				.append("left join fetch sh.schedulerOrderHistoryDBItem oh ")
@@ -265,7 +269,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 			query.setTimestamp("startTimeTo", dateTo);
 		}
 
-		return executeQueryList(query);
+		return executeQueryList(functionName,sql,query);
 	}
 	
 	
@@ -281,7 +285,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 			Date dateFrom, 
 			Date dateTo)
 			throws Exception {
-
+		String functionName = "getOrdersAsListX";	
 		StringBuffer sql = new StringBuffer("from "
 				+ DBITEM_SCHEDULER_ORDER_HISTORY + " t ")
 				.append("left join fetch t.schedulerOrderStepHistory sh ")
@@ -302,7 +306,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 			query.setTimestamp("startTimeTo", dateTo);
 		}
 
-		return executeQueryList(query);
+		return executeQueryList(functionName,sql,query);
 	}
 
 	
@@ -316,19 +320,20 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonNotifications> getNotificationOrderSteps(Long notificationId) throws Exception{
 			
+		String functionName = "getNotificationOrderSteps";
 		StringBuffer sql = new StringBuffer("from "+DBITEM_SCHEDULER_MON_NOTIFICATIONS+" n1 ")
 		.append("where exists (")
-		.append("   select n2.schedulerId,n2.orderHistoryId ") 
+		.append("   select n2.orderHistoryId ") 
 		.append("   from "+DBITEM_SCHEDULER_MON_NOTIFICATIONS+" n2 ")
 		.append("   where n1.orderHistoryId = n2.orderHistoryId ")
 		.append("   and n2.id = :id ")
-		.append(")")
+		.append(") ")
 		.append("order by n1.step");
 		
 		Query q = session.createQuery(sql.toString());
 		q.setParameter("id",notificationId);
 		
-		return executeQueryList(q);
+		return executeQueryList(functionName,sql,q);
 	}
 	
 	
@@ -339,14 +344,14 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	 */
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonChecks> getSchedulerMonChecksForSetTimer() throws Exception{
-		
+		String functionName = "getSchedulerMonChecksForSetTimer";
 		StringBuffer sql = new StringBuffer("from "+DBITEM_SCHEDULER_MON_CHECKS+" ")
 		.append("where checked = 0");
 		
 		Query q = session.createQuery(sql.toString());
 		q.setReadOnly(true);
 		
-		return executeQueryList(q);
+		return executeQueryList(functionName,sql,q);
 	}
 	
 	
@@ -722,14 +727,15 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 		StringBuffer sql = new StringBuffer("from "
 				+ DBITEM_SCHEDULER_HISTORY + " ")
 				.append("where id = :taskId");
-
+		String functionName = "getSchedulerHistory";
+		
 		Query query = session.createQuery(sql.toString());
 		query.setReadOnly(true);
 		
 		query.setParameter("taskId", taskId);
 
 		@SuppressWarnings("unchecked")
-		List<DBItemSchedulerHistory> result = executeQueryList(query);
+		List<DBItemSchedulerHistory> result = executeQueryList(functionName,sql,query);
 		if (result.size() > 0) {
 			return result.get(0);
 		}
@@ -751,6 +757,8 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 			Long taskId, 
 			Long step, 
 			Long orderHistoryId) throws Exception {
+		String functionName = "getNotification";
+		
 		StringBuffer sql = new StringBuffer("from "
 				+ DBITEM_SCHEDULER_MON_NOTIFICATIONS + " ")
 				.append("where schedulerId = :schedulerId ")
@@ -767,7 +775,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 		query.setParameter("orderHistoryId", orderHistoryId);
 		
 		@SuppressWarnings("unchecked")
-		List<DBItemSchedulerMonNotifications> result = executeQueryList(query);
+		List<DBItemSchedulerMonNotifications> result = executeQueryList(functionName,sql,query);
 		if (result.size() > 0) {
 			return result.get(0);
 		}
@@ -783,6 +791,8 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	 */
 	public DBItemSchedulerMonNotifications getNotification(
 			Long id) throws Exception {
+		String functionName = "getNotification";
+		
 		StringBuffer sql = new StringBuffer("from "
 				+ DBITEM_SCHEDULER_MON_NOTIFICATIONS + " ")
 				.append("where id = :id ");
@@ -791,7 +801,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 		query.setParameter("id", id);
 	
 		@SuppressWarnings("unchecked")
-		List<DBItemSchedulerMonNotifications> result = executeQueryList(query);
+		List<DBItemSchedulerMonNotifications> result = executeQueryList(functionName,sql,query);
 		if (result.size() > 0) {
 			return result.get(0);
 		}
@@ -813,6 +823,8 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 			String serviceName,
 			Long notificationId
 			) throws Exception {
+		String functionName = "getSystemNotifications";
+		
 		StringBuffer sql = new StringBuffer("from "
 				+ DBITEM_SCHEDULER_MON_SYSNOTIFICATIONS + " ")
 				.append("where notificationId = :notificationId ")
@@ -824,7 +836,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 		query.setParameter("systemId", systemId.toLowerCase());
 		query.setParameter("serviceName", serviceName);
 		
-		return executeQueryList(query);
+		return executeQueryList(functionName,sql,query);
 	}
 	
 	/**
@@ -846,6 +858,8 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 			String stepFrom,
 			String stepTo
 			) throws Exception {
+		String functionName = "getSystemNotification";
+		
 		StringBuffer sql = new StringBuffer("from "
 				+ DBITEM_SCHEDULER_MON_SYSNOTIFICATIONS + " ")
 				.append("where notificationId = :notificationId ")
@@ -864,7 +878,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 		query.setParameter("systemId", systemId.toLowerCase());
 		
 		@SuppressWarnings("unchecked")
-		List<DBItemSchedulerMonSystemNotifications> result = executeQueryList(query);
+		List<DBItemSchedulerMonSystemNotifications> result = executeQueryList(functionName,sql,query);
 		if (result.size() > 0) {
 			return result.get(0);
 		}
@@ -880,14 +894,17 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	public Date getLastNotificationDate() throws Exception {
 
 		Date lastDate = null;
-
-		Query query = session.createQuery("from "
+		String functionName = "getLastNotificationDate";
+		
+		StringBuffer sql = new StringBuffer("from "
 				+ DBITEM_SCHEDULER_VARIABLES
 				+ " where name = :name");
+
+		Query query = session.createQuery(sql.toString());
 		query.setParameter("name", SCHEDULER_VARIABLES_NOTIFICATION);
 		try {
 			@SuppressWarnings("unchecked")
-			List<DBItemSchedulerVariables> result = executeQueryList(query);
+			List<DBItemSchedulerVariables> result = executeQueryList(functionName,sql,query);
 			if(result.size() > 0){
 				DBItemSchedulerVariables dbItem = result.get(0);
 				try {
@@ -904,10 +921,6 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 			logger.warn(String.format("'%s' cannot be given from db:  %s", 
 					SCHEDULER_VARIABLES_NOTIFICATION,
 					ex.getMessage()));
-		}
-
-		if (lastDate == null) {
-			lastDate = getCurrentDateTimeMinusDays(1);
 		}
 		return lastDate;
 	}
@@ -942,6 +955,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonChecks> getChecksForNotifyTimer()
 			throws Exception {
+		String functionName = "getChecksForNotifyTimer";
 		
 		StringBuffer sql = new StringBuffer("from "+DBITEM_SCHEDULER_MON_CHECKS+" ")
 		.append("where checked = 1");
@@ -949,7 +963,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 		Query q = session.createQuery(sql.toString());
 		q.setReadOnly(true);
 		
-		return executeQueryList(q);
+		return executeQueryList(functionName,sql,q);
 
 	}
 	
@@ -961,7 +975,8 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonNotifications> getNotificationsForNotifyError()
 			throws Exception {
-
+		String functionName = "getNotificationsForNotifyError";
+		
 		StringBuffer sql = new StringBuffer("from "+ DBITEM_SCHEDULER_MON_NOTIFICATIONS + " n1 ")
 		.append("where n1.step = 1 ")
 		.append("and ")
@@ -975,7 +990,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 		Query query = this.session.createQuery(sql.toString());
 		query.setReadOnly(true);
 		
-		return executeQueryList(query);
+		return executeQueryList(functionName,sql,query);
 	}
 
 	
@@ -987,7 +1002,8 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonNotifications> getNotificationsForNotifyRecovered()
 			throws Exception {
-
+		String functionName = "getNotificationsForNotifyRecovered";
+		
 		StringBuffer sql = new StringBuffer("from "+ DBITEM_SCHEDULER_MON_NOTIFICATIONS + " n1 ")
 		.append("where n1.step = 1 ")
 		.append("and ")
@@ -1000,7 +1016,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 		Query query = this.session.createQuery(sql.toString());
 		query.setReadOnly(true);
 		
-		return executeQueryList(query);
+		return executeQueryList(functionName,sql,query);
 	}
 			
 	/**
@@ -1009,6 +1025,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	 */
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonNotifications> getNotificationsForNotifySuccess() throws Exception{
+		String functionName = "getNotificationsForNotifySuccess";
 		
 		StringBuffer sql = new StringBuffer("from "+DBITEM_SCHEDULER_MON_NOTIFICATIONS+" n1 ")
 		.append("where n1.step = 1 ")
@@ -1025,32 +1042,36 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 		
 		Query query = this.session.createQuery(sql.toString());
 		query.setReadOnly(true);
-		
-		/**
-		List<DBItemSchedulerMonNotifications> result = null;
-		
-		try{
-			result = query.list();
-		}
-		catch(Exception ex){
-			logger.info(String.format("getNotificationsForNotifySuccess. try again in %s. cause exception = %s",RERUN_TRANSACTION_INTERVAL,ex.getMessage()));
-			Thread.sleep(RERUN_TRANSACTION_INTERVAL*1000);
-			result = query.list();
-		}*/
-		return executeQueryList(query);
+		return executeQueryList(functionName,sql,query);
 	}
 	
+	/**
+	 * 
+	 * @param functionName
+	 * @param sql
+	 * @param q
+	 * @return
+	 * @throws Exception
+	 */
 	@SuppressWarnings("rawtypes")
-	private List executeQueryList(Query q) throws Exception{
+	private List executeQueryList(String functionName, StringBuffer sql, Query q) throws Exception{
 		List result = null;
-		
 		try{
-			result = q.list();
+			try{
+				result = q.list();
+			}
+			catch(Exception ex){
+				logger.debug(String.format("executeQueryList. try rerun %s again in %s. cause exception = %s, sql = %s",
+						functionName,
+						RERUN_TRANSACTION_INTERVAL,
+						ex.getMessage()
+						,sql));
+				Thread.sleep(RERUN_TRANSACTION_INTERVAL*1000);
+				result = q.list();
+			}
 		}
 		catch(Exception ex){
-			logger.info(String.format("executeQueryList. try again in %s. cause exception = %s",RERUN_TRANSACTION_INTERVAL,ex.getMessage()));
-			Thread.sleep(RERUN_TRANSACTION_INTERVAL*1000);
-			result = q.list();
+			throw new Exception(String.format("%s: %s , sql = %s",functionName,ex.getMessage(),sql));
 		}
 		return result;
 	}
@@ -1063,6 +1084,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	 */
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonNotifications> getOrderNotifications(Long orderHistoryId) throws Exception{
+		String functionName = "getOrderNotifications";
 		
 		StringBuffer sql = new StringBuffer("from "+DBITEM_SCHEDULER_MON_NOTIFICATIONS+" ")
 		.append("where orderHistoryId = :orderHistoryId ")
@@ -1073,7 +1095,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 		
 		q.setParameter("orderHistoryId",orderHistoryId);
 		
-		return executeQueryList(q);
+		return executeQueryList(functionName,sql,q);
 	}
 	
 	/**
@@ -1277,6 +1299,10 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	
 	public static Date getCurrentDateTimeMinusMinutes(int minutes) {
 		return new DateTime(DateTimeZone.UTC).toLocalDateTime().minusMinutes(minutes).toDate();
+	}
+	
+	public static Date getDateTimeMinusMinutes(Date date,int minutes) {
+		return new DateTime(date).toLocalDateTime().minusMinutes(minutes).toDate();
 	}
 	/**
 	 * 

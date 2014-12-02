@@ -24,8 +24,6 @@ import com.sos.JSHelper.Basics.JSToolBox;
 public class ResetNotificationsJobMain extends JSToolBox {
 	private final static String					conClassName						= "ResetNotificationsJobMain"; //$NON-NLS-1$
 	private static Logger		logger			= Logger.getLogger(ResetNotificationsJobMain.class);
-	@SuppressWarnings("unused")	
-	
 	protected ResetNotificationsJobOptions	objOptions			= null;
 
 	/**
@@ -43,8 +41,6 @@ public class ResetNotificationsJobMain extends JSToolBox {
 
 		final String conMethodName = conClassName + "::Main"; //$NON-NLS-1$
 
-	
-		logger = Logger.getRootLogger();
 		logger.info("ResetNotificationsJob - Main"); //$NON-NLS-1$
 
 		try {

@@ -6,11 +6,11 @@ import java.io.File;
 
 import org.apache.log4j.Logger;
 
-import sos.scheduler.job.JobSchedulerJobAdapter;  // Super-Class for JobScheduler Java-API-Jobs
-import sos.spooler.Order;
+import sos.scheduler.job.JobSchedulerJobAdapter;
 import sos.util.SOSString;
 
 import com.sos.JSHelper.Exceptions.JobSchedulerException;
+// Super-Class for JobScheduler Java-API-Jobs
 /**
  * \class 		SystemNotifierJobJSAdapterClass - JobScheduler Adapter for "SystemNotifierJob"
  *
@@ -28,6 +28,7 @@ import com.sos.JSHelper.Exceptions.JobSchedulerException;
  * \endverbatim
  */
 public class SystemNotifierJobJSAdapterClass extends JobSchedulerJobAdapter  {
+	@SuppressWarnings("unused")
 	private static Logger		logger			= Logger.getLogger(SystemNotifierJobJSAdapterClass.class);
 
 	SystemNotifierJob objR = null;
@@ -85,7 +86,7 @@ public class SystemNotifierJobJSAdapterClass extends JobSchedulerJobAdapter  {
 	public boolean spooler_process() throws Exception {
 			try {
 			super.spooler_process();
-			doProcessing();
+			objR.Execute();
 		}
 		catch (Exception e) {
             throw new JobSchedulerException("Fatal Error:" + e.getMessage(), e);
@@ -94,7 +95,7 @@ public class SystemNotifierJobJSAdapterClass extends JobSchedulerJobAdapter  {
 		} // finally
         return signalSuccess();
 
-	} // spooler_process
+	} 
 
 	/**
 	 * 
@@ -110,17 +111,6 @@ public class SystemNotifierJobJSAdapterClass extends JobSchedulerJobAdapter  {
 			spooler_log.warn(ex.getMessage());
 		}
 	}
-
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	private void doProcessing() throws Exception {
-			
-		Order order = spooler_task.order();
-		this.objO.system_id.Value(order == null ? null : order.id());
-		objR.Execute();
-	} // doProcessing
 
 }
 

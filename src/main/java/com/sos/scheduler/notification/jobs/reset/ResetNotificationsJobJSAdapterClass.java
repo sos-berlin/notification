@@ -27,6 +27,7 @@ import com.sos.JSHelper.Exceptions.JobSchedulerException;
  * \endverbatim
  */
 public class ResetNotificationsJobJSAdapterClass extends JobSchedulerJobAdapter  {
+	@SuppressWarnings("unused")
 	private static Logger		logger			= Logger.getLogger(ResetNotificationsJobJSAdapterClass.class);
 
 	ResetNotificationsJob objR = null;
@@ -62,6 +63,22 @@ public class ResetNotificationsJobJSAdapterClass extends JobSchedulerJobAdapter 
 		}
 	}
 	
+	/**
+	 * 
+	 */
+	@Override
+	public boolean spooler_init() {
+		try{
+			this.init();
+		}
+		catch(Exception ex){
+			spooler_log.error(ex.getMessage());
+			return false;
+		}
+		
+		return super.spooler_init();
+	}
+	
 	
 	/**
 	 * 
@@ -70,7 +87,7 @@ public class ResetNotificationsJobJSAdapterClass extends JobSchedulerJobAdapter 
 	public boolean spooler_process() throws Exception {
 		try {
 			super.spooler_process();
-			doProcessing();
+			objR.Execute();
 		}
 		catch (Exception e) {
             throw new JobSchedulerException("Fatal Error:" + e.getMessage(), e);
@@ -78,27 +95,5 @@ public class ResetNotificationsJobJSAdapterClass extends JobSchedulerJobAdapter 
         return signalSuccess();
 
 	} // spooler_process
-
-	
-
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	private void doProcessing() throws Exception {
-		logger.info("doProcessing");
-		
-		try{
-			this.init();
-			objR.Execute();
-		}
-		catch(Exception ex){
-			throw ex;
-		}
-		finally{
-			this.exit();
-		}
-	}
-
 }
 

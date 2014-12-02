@@ -27,6 +27,7 @@ import com.sos.JSHelper.Exceptions.JobSchedulerException;
  * \endverbatim
  */
 public class CheckHistoryJobJSAdapterClass extends JobSchedulerJobAdapter  {
+	@SuppressWarnings("unused")
 	private static Logger		logger			= Logger.getLogger(CheckHistoryJobJSAdapterClass.class);
 
 	CheckHistoryJob objR = null;
@@ -84,14 +85,14 @@ public class CheckHistoryJobJSAdapterClass extends JobSchedulerJobAdapter  {
 	public boolean spooler_process() throws Exception {
 		try {
 			super.spooler_process();
-			doProcessing();
+			objR.Execute();
 		}
 		catch (Exception e) {
             throw new JobSchedulerException("Fatal Error:" + e.getMessage(), e);
    		}
         return signalSuccess();
 
-	} // spooler_process
+	}
 
 	/**
 	 * 
@@ -106,14 +107,6 @@ public class CheckHistoryJobJSAdapterClass extends JobSchedulerJobAdapter  {
 		catch(Exception ex){
 			spooler_log.warn(ex.getMessage());
 		}
-	}
-
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	private void doProcessing() throws Exception {
-		objR.Execute();
 	}
 
 }

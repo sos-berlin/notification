@@ -64,8 +64,6 @@ public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 			Date dateFrom, Date dateTo) throws Exception {
 		String functionName = "onProcess";
 		
-		logger.info(String.format("%s: start",functionName));
-
 		if (dbLayer == null) {
 			throw new Exception("dbLayer is NULL");
 		}
@@ -74,15 +72,16 @@ public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 		}
 
 		if (timers.size() == 0) {
-			logger.info(String.format("%s: skip.  timers size is 0",functionName));
+			logger.info(String.format("%s: skip. found 0 timers definitions",functionName));
 			return;
 		}
 
 		this.initCountChecks();
 		
 		List<DBItemSchedulerMonChecks> result = dbLayer.getSchedulerMonChecksForSetTimer();
-		logger.info(String.format("%s: result size = %s",
+		logger.info(String.format("%s: found %s timer definitions and %s timers for check in the db",
 				functionName,
+				timers.size(),
 				result.size()));
 		
 		for (int i = 0; i < result.size(); i++) {
@@ -103,7 +102,6 @@ public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 				this.countChecksRemoved,
 				this.countChecksSkipped,
 				this.countChecksForRerun));
-		logger.info(String.format("%s: end",functionName));
 	}
 
 	/**
@@ -565,7 +563,7 @@ public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 		List<ScriptEngineFactory> factories = manager.getEngineFactories();
 
 		if (factories == null) {
-			logger.info("No available script engines were found. List of ScriptEngineFactory is null");
+			logger.info("No available script engines were found. List of ScriptEngineFactories is null");
 		} else {
 			logger.info("Available script engines:");
 			for (int i = 0; i < factories.size(); i++) {

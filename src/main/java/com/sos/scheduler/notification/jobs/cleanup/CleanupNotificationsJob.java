@@ -5,7 +5,7 @@ package com.sos.scheduler.notification.jobs.cleanup;
 import org.apache.log4j.Logger;
 
 import com.sos.JSHelper.Basics.JSJobUtilitiesClass;
-import com.sos.scheduler.notification.model.INotificationModel;
+import com.sos.scheduler.notification.helper.DBConnector;
 import com.sos.scheduler.notification.model.cleanup.CleanupNotificationsModel;
 
 /**
@@ -27,7 +27,7 @@ public class CleanupNotificationsJob extends JSJobUtilitiesClass<CleanupNotifica
 	private final String					conClassName						= "CleanupNotificationsJob";  //$NON-NLS-1$
 	private static Logger		logger			= Logger.getLogger(CleanupNotificationsJob.class);
 
-	private INotificationModel model = null;
+	private DBConnector db;
 	/**
 	 * 
 	 * \brief CleanupNotificationsJob
@@ -39,24 +39,25 @@ public class CleanupNotificationsJob extends JSJobUtilitiesClass<CleanupNotifica
 		super(new CleanupNotificationsJobOptions());
 	}
 
+	/**
+	 * 
+	 * @throws Exception
+	 */
 	public void init() throws Exception {
-		
-		this.model = new CleanupNotificationsModel(Options());
-		this.model.init();
+		this.db = new DBConnector();
+		this.db.connect(Options().hibernate_configuration_file.Value(),false);
 	}
 
-	
+	/**
+	 * 
+	 */
 	public void exit(){
 		final String conMethodName = conClassName + "::exit";  //$NON-NLS-1$
 		try {
-			this.model.exit();
+			this.db.disconnect();
 		} catch (Exception e) {
 			logger.warn(String.format("%s:%s",conMethodName,e.getMessage()));
 		}
-	}
-
-	public INotificationModel getModel(){
-		return this.model;
 	}
 		
 	/**
@@ -105,8 +106,10 @@ public class CleanupNotificationsJob extends JSJobUtilitiesClass<CleanupNotifica
 			Options().CheckMandatory();
 			logger.debug(Options().toString());
 			
-			this.model.process();
-						
+			CleanupNotificationsModel model = new CleanupNotificationsModel();
+			model.init(Options(),this.db.getDbLayer());
+			model.process();
+			model.exit();
 		}
 		catch (Exception e) {
 			e.printStackTrace(System.err);

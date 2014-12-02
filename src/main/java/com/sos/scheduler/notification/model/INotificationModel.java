@@ -12,7 +12,7 @@ public interface INotificationModel {
 	 * 
 	 * @throws Exception
 	 */
-	public void init() throws Exception;
+	public void init(DBLayerSchedulerMon dbLayer) throws Exception;
 	
 	/**
 	 * 
@@ -30,6 +30,5 @@ public interface INotificationModel {
 	 * 
 	 * @return
 	 */
-	public DBLayerSchedulerMon getDbLayer();
 	
 }

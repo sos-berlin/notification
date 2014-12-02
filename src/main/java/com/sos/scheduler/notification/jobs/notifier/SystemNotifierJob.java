@@ -7,7 +7,7 @@ import org.apache.log4j.Logger;
 import sos.spooler.Spooler;
 
 import com.sos.JSHelper.Basics.JSJobUtilitiesClass;
-import com.sos.scheduler.notification.model.INotificationModel;
+import com.sos.scheduler.notification.helper.DBConnector;
 import com.sos.scheduler.notification.model.notifier.SystemNotifierModel;
 
 /**
@@ -29,7 +29,8 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 	private final String					conClassName						= "SystemNotifierJob";  //$NON-NLS-1$
 	private static Logger		logger			= Logger.getLogger(SystemNotifierJob.class);
 	
-    SystemNotifierModel model = null;
+	private Spooler spooler;
+	private DBConnector db;
     
 	/**
 	 * 
@@ -42,24 +43,30 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 		super(new SystemNotifierJobOptions());
 	}
 
+	/**
+	 * 
+	 * @param spooler
+	 * @throws Exception
+	 */
 	public void init(Spooler spooler) throws Exception {
-		this.model = new SystemNotifierModel(Options());
-		this.model.init();
-		this.model.setSpooler(spooler);
+		this.spooler = spooler;
+		this.db = new DBConnector();
+		this.db.connect(Options().hibernate_configuration_file.Value(),false);
+	
 	}
 
+	/**
+	 * 
+	 */
 	public void exit(){
 		final String conMethodName = conClassName + "::exit";  //$NON-NLS-1$
 		try {
-			this.model.exit();
+			this.db.disconnect();
 		} catch (Exception e) {
 			logger.warn(String.format("%s:%s",conMethodName,e.getMessage()));
 		}
 	}
 	
-	public INotificationModel getModel(){
-		return this.model;
-	}
 	
 	/**
 	 * 
@@ -107,16 +114,10 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 			Options().CheckMandatory();
 			logger.debug(Options().toString());
 			
-			try{
-				this.model.process();
-			}
-			catch(Exception ex){
-				logger.info(String.format(
-						"this.model.process : %s"
-						,ex.getMessage()));
-				
-				throw ex;
-			}
+			SystemNotifierModel model = new SystemNotifierModel();
+			model.init(Options(), this.db.getDbLayer(),spooler);
+			model.process();
+			model.exit();
 		}
 		catch (Exception e) {
 			e.printStackTrace(System.err);

@@ -12,26 +12,17 @@ import com.sos.scheduler.notification.model.NotificationModel;
 public class CleanupNotificationsModel extends NotificationModel {
 	
 	final Logger logger = LoggerFactory.getLogger(CleanupNotificationsModel.class);
-	
-	CleanupNotificationsJobOptions options = null;
+	private CleanupNotificationsJobOptions options;
 	
 	/**
-     * 
-     * @param pOptions
-     */
-    public CleanupNotificationsModel(CleanupNotificationsJobOptions opt){
-    	this.options = opt;
+	 * 
+	 */
+	public CleanupNotificationsModel(){
     }
     
-    /**
-     * 
-     * @throws Exception
-     */
-    @Override
-    public void init() throws Exception{
-    	logger.info(String.format("init"));
-    	
-    	super.doInit(this.options.hibernate_configuration_file.Value(),false);
+    public void init(CleanupNotificationsJobOptions opt, DBLayerSchedulerMon db) throws Exception{
+    	super.init(db);
+    	this.options = opt;
     }
     
     
@@ -56,7 +47,7 @@ public class CleanupNotificationsModel extends NotificationModel {
     	super.process();
     	
     	try{
-    		int minutes = this.options.minutes.value();
+    		int minutes = this.options.age.value();
     		Date date = DBLayerSchedulerMon.getCurrentDateTimeMinusMinutes(minutes);
     		
     		logger.info(String.format("process: delete where created <= %s minutes ago (%s)",

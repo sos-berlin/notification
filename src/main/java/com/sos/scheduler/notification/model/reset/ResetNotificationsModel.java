@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import sos.util.SOSString;
 
+import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
 import com.sos.scheduler.notification.jobs.reset.ResetNotificationsJobOptions;
 import com.sos.scheduler.notification.model.NotificationModel;
 
@@ -18,27 +19,18 @@ import com.sos.scheduler.notification.model.NotificationModel;
 public class ResetNotificationsModel extends NotificationModel {
 	
 	final Logger logger = LoggerFactory.getLogger(ResetNotificationsModel.class);
-	
-	ResetNotificationsJobOptions options = null;
+	private ResetNotificationsJobOptions options;
 	
 	/**
-     * 
-     * @param pOptions
-     */
-    public ResetNotificationsModel(
-    		ResetNotificationsJobOptions opt){
-    	this.options = opt;
+	 * 
+	 */
+	public ResetNotificationsModel(){
     }
     
-    /**
-     * 
-     * @throws Exception
-     */
-    @Override
-    public void init() throws Exception{
-    	logger.info(String.format("init"));
-    	
-    	super.doInit(this.options.hibernate_configuration_file.Value(),false);
+ 
+    public void init(ResetNotificationsJobOptions opt, DBLayerSchedulerMon db) throws Exception{
+    	super.init(db);
+    	this.options = opt;
     }
     
     

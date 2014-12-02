@@ -114,17 +114,17 @@ public class SystemNotifierJobOptionsSuperClass extends JSOptionsClass {
                         
 
 /**
- * \var configuration_schema_file : 
+ * \var schema_configuration_file : 
  * 
  *
  */
-    @JSOptionDefinition(name = "configuration_schema_file", 
+    @JSOptionDefinition(name = "schema_configuration_file", 
     description = "", 
-    key = "configuration_schema_file", 
+    key = "schema_configuration_file", 
     type = "SOSOptionString", 
     mandatory = true)
     
-    public SOSOptionString configuration_schema_file = new SOSOptionString(this, conClassName + ".configuration_schema_file", // HashMap-Key
+    public SOSOptionString schema_configuration_file = new SOSOptionString(this, conClassName + ".schema_configuration_file", // HashMap-Key
                                                                 "", // Titel
                                                                 " ", // InitValue
                                                                 "", // DefaultValue
@@ -132,7 +132,7 @@ public class SystemNotifierJobOptionsSuperClass extends JSOptionsClass {
                     );
 
 /**
- * \brief getconfiguration_schema_file : 
+ * \brief getschema_configuration_file : 
  * 
  * \details
  * 
@@ -140,35 +140,35 @@ public class SystemNotifierJobOptionsSuperClass extends JSOptionsClass {
  * \return 
  *
  */
-    public SOSOptionString  getconfiguration_schema_file() {
-        return configuration_schema_file;
+    public SOSOptionString  getschema_configuration_file() {
+        return schema_configuration_file;
     }
 
 /**
- * \brief setconfiguration_schema_file : 
+ * \brief setschema_configuration_file : 
  * 
  * \details
  * 
  *
- * @param configuration_schema_file : 
+ * @param schema_configuration_file : 
  */
-    public void setconfiguration_schema_file (SOSOptionString p_configuration_schema_file) { 
-        this.configuration_schema_file = p_configuration_schema_file;
+    public void setschema_configuration_file (SOSOptionString p_schema_configuration_file) { 
+        this.schema_configuration_file = p_schema_configuration_file;
     }
 
     
     /**
-     * \var system_id : 
+     * \var system_configuration_file : 
      * 
      *
      */
-        @JSOptionDefinition(name = "system_id", 
+        @JSOptionDefinition(name = "system_configuration_file", 
         description = "", 
-        key = "system_id", 
+        key = "system_configuration_file", 
         type = "SOSOptionString", 
         mandatory = true)
         
-        public SOSOptionString system_id = new SOSOptionString(this, conClassName + ".system_id", // HashMap-Key
+        public SOSOptionString system_configuration_file = new SOSOptionString(this, conClassName + ".system_configuration_file", // HashMap-Key
                                                                     "", // Titel
                                                                     " ", // InitValue
                                                                     "", // DefaultValue
@@ -176,7 +176,7 @@ public class SystemNotifierJobOptionsSuperClass extends JSOptionsClass {
                         );
 
     /**
-     * \brief getsystem_id : 
+     * \brief getsystem_configuration_file : 
      * 
      * \details
      * 
@@ -184,20 +184,20 @@ public class SystemNotifierJobOptionsSuperClass extends JSOptionsClass {
      * \return 
      *
      */
-        public SOSOptionString  getsystem_id() {
-            return system_id;
+        public SOSOptionString  getsystem_configuration_file() {
+            return system_configuration_file;
         }
 
     /**
-     * \brief setsystem_id : 
+     * \brief setsystem_configuration_file : 
      * 
      * \details
      * 
      *
-     * @param system_id : 
+     * @param system_configuration_file : 
      */
-        public void setsystem_id (SOSOptionString p_system_id) { 
-            this.system_id = p_system_id;
+        public void setsystem_configuration_file (SOSOptionString p_system_configuration_file) { 
+            this.system_configuration_file = p_system_configuration_file;
         }
     
             /**

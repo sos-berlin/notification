@@ -24,8 +24,6 @@ import com.sos.JSHelper.Basics.JSToolBox;
 public class CleanupNotificationsJobMain extends JSToolBox {
 	private final static String					conClassName						= "CleanupNotificationsJobMain"; //$NON-NLS-1$
 	private static Logger		logger			= Logger.getLogger(CleanupNotificationsJobMain.class);
-	@SuppressWarnings("unused")	
-	
 	protected CleanupNotificationsJobOptions	objOptions			= null;
 
 	/**
@@ -43,8 +41,6 @@ public class CleanupNotificationsJobMain extends JSToolBox {
 
 		final String conMethodName = conClassName + "::Main"; //$NON-NLS-1$
 
-	
-		logger = Logger.getRootLogger();
 		logger.info("CleanupNotificationsJob - Main"); //$NON-NLS-1$
 
 		try {

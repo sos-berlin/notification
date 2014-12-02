@@ -24,7 +24,6 @@ import com.sos.JSHelper.Basics.JSToolBox;
 public class CheckHistoryJobMain extends JSToolBox {
 	private final static String					conClassName						= "CheckHistoryJobMain"; //$NON-NLS-1$
 	private static Logger		logger			= Logger.getLogger(CheckHistoryJobMain.class);
-	@SuppressWarnings("unused")	
 
 	protected CheckHistoryJobOptions	objOptions			= null;
 
@@ -42,8 +41,7 @@ public class CheckHistoryJobMain extends JSToolBox {
 	public final static void main(String[] pstrArgs) {
 
 		final String conMethodName = conClassName + "::Main"; //$NON-NLS-1$
-	
-		logger = Logger.getRootLogger();
+
 		logger.info("CheckHistoryJob - Main"); //$NON-NLS-1$
 
 		try {
