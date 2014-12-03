@@ -5,6 +5,9 @@ import org.w3c.dom.Node;
 
 import sos.util.SOSString;
 
+import com.sos.scheduler.notification.plugins.notifier.ISystemNotifierPlugin;
+import com.sos.scheduler.notification.plugins.notifier.SystemNotifierSendNscaPlugin;
+
 public class ElementNotificationMonitorInterface {
 	private Node monitorInterface;
 	
@@ -16,6 +19,8 @@ public class ElementNotificationMonitorInterface {
 	private int monitorConnectionTimeout;
 	private int monitorResponseTimeout;
 	private String command;
+	private String plugin;
+	
 	
 	
 	public ElementNotificationMonitorInterface(Node monitorInterface){
@@ -27,10 +32,6 @@ public class ElementNotificationMonitorInterface {
 		this.monitorHost = NotificationXmlHelper.getMonitorHost(el);
 		this.monitorEncryption = NotificationXmlHelper.getMonitorEncryption(el);
 		this.monitorPassword = NotificationXmlHelper.getMonitorPassword(el);
-		this.command = NotificationXmlHelper.getValue(el);
-		if(!SOSString.isEmpty(this.command)){
-			this.command = this.command.trim();
-		}
 		
 		this.monitorPort = -1;
 		this.monitorConnectionTimeout = -1;
@@ -44,7 +45,57 @@ public class ElementNotificationMonitorInterface {
 		catch(Exception ex){}
 		try{if(rt != null){	this.monitorResponseTimeout = Integer.parseInt(rt);}}
 		catch(Exception ex){}
+		
+		String c = NotificationXmlHelper.getValue(el);
+		if(!SOSString.isEmpty(c)){
+			this.command = c.trim();
+		}
+		String p = NotificationXmlHelper.getPlugin(el);
+		if(!SOSString.isEmpty(p)){
+			this.plugin = p.trim();
+		}
+		
 	}
+	
+	/**
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	public ISystemNotifierPlugin getPluginObject() throws Exception{
+		ISystemNotifierPlugin pluginObject = null;
+
+		if (SOSString.isEmpty(this.plugin)) {
+			pluginObject = new SystemNotifierSendNscaPlugin();
+		} else {
+			pluginObject = this.initializePlugin(this.plugin);
+		}
+		return pluginObject;
+	}
+	
+
+	/**
+	 * 
+	 * @param plugin
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	private ISystemNotifierPlugin initializePlugin(String plugin) throws Exception{
+    	
+    	try{
+    	 	Class<ISystemNotifierPlugin> c = (Class<ISystemNotifierPlugin>)Class.forName(plugin);
+    		return c.newInstance();
+    	}
+    	catch(Exception ex){
+    		throw new Exception(String.format("plugin cannot be initialized(%s) : %s",plugin,ex.getMessage()));
+    	}
+    }
+	
+	public String getPlugin() {
+		return plugin;
+	}
+
 	
 	public String getServiceHost() {
 		return this.serviceHost;

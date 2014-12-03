@@ -15,6 +15,7 @@ import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
 import com.sos.scheduler.notification.helper.ElementNotificationMonitor;
 import com.sos.scheduler.notification.helper.EServiceMessagePrefix;
 import com.sos.scheduler.notification.helper.EServiceStatus;
+import com.sos.scheduler.notification.helper.ElementNotificationMonitorCommand;
 
 /**
  * 
@@ -35,13 +36,13 @@ public class SystemNotifierJobPlugin extends SystemNotifierPlugin {
 	public void init(ElementNotificationMonitor monitor) throws Exception{
 		super.init(monitor);
 		
-		String configuredCommand = this.getNotificationMonitor().getCommand();
+		ElementNotificationMonitorCommand configuredCommand = this.getNotificationMonitor().getMonitorCommand();
 		if(configuredCommand == null){
 			throw new Exception(String.format("%s: Command element is missing (not configured)"
 					,this.getClass().getSimpleName()));
 	
 		}
-		this.setCommand(configuredCommand);
+		this.setCommand(configuredCommand.getCommand());
 	}
 	
 	/**

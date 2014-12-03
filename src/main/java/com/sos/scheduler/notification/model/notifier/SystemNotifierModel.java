@@ -39,6 +39,7 @@ public class SystemNotifierModel extends NotificationModel {
 	
 	private SystemNotifierJobOptions options;
 	private String systemId;
+	private File systemFile;
 	
 	private ArrayList<ElementNotificationJobChain> monitorOnErrorJobChains;
 	private ArrayList<ElementNotificationJobChain> monitorOnSuccessJobChains;
@@ -96,28 +97,29 @@ public class SystemNotifierModel extends NotificationModel {
 					schemaFile.getAbsolutePath()));
 		}
 		
-		File systemFile = new File(this.options.system_configuration_file.Value());
-		if(!systemFile.exists()){
+		this.systemFile = new File(this.options.system_configuration_file.Value());
+		if(!this.systemFile.exists()){
 			throw new Exception(String.format("%s: system configuration file not found: %s",
 					functionName,
-					systemFile.getAbsolutePath()));
+					this.systemFile.getAbsolutePath()));
 		}
 		
-		logger.info(String.format("%s: read configuration file %s",
+		logger.debug(String.format("%s: read configuration file %s",
 				functionName,
-				systemFile.getAbsolutePath()));
+				this.systemFile.getAbsolutePath()));
 		
-		SOSXMLXPath xpath = new SOSXMLXPath(systemFile.getAbsolutePath());
+		SOSXMLXPath xpath = new SOSXMLXPath(this.systemFile.getAbsolutePath());
 		
 		this.initMonitorObjects();
 		
-		this.systemId = NotificationXmlHelper.getSystemMonitorNotificationId(xpath);
+		this.systemId = NotificationXmlHelper.getSystemMonitorNotificationSystemId(xpath);
 		if(SOSString.isEmpty(this.systemId)){
-			throw new Exception(String.format("systemId is NULL"));
+			throw new Exception(String.format("systemId is NULL (configured SystemMonitorNotification/@system_id is not found)"));
 		}
-		logger.info(String.format("%s: system id = %s",
+		logger.info(String.format("%s: system id = %s (%s)",
 				functionName,
-				this.systemId));
+				this.systemId,
+				this.systemFile.getAbsolutePath()));
 		
 		NodeList monitorsOnError = NotificationXmlHelper.selectNotificationMonitorOnErrorDefinitions(xpath);
 		this.setMonitorObjects(xpath, monitorsOnError, this.monitorOnErrorJobChains,this.monitorOnErrorTimers);
@@ -1265,14 +1267,17 @@ public class SystemNotifierModel extends NotificationModel {
 		String functionName = "process";
 		String systemId = this.systemId;
 		
+		boolean found = false;
     	if(this.monitorOnSuccessJobChains != null && this.monitorOnSuccessJobChains.size() > 0){
-     	 	this.notifySuccess(systemId,this.monitorOnSuccessJobChains);		
+    		found = true;
+    		this.notifySuccess(systemId,this.monitorOnSuccessJobChains);		
     	}
     	else{
     		logger.info(String.format("%s: skip notify success. found 0 \"service_name_on_success\" definitions",functionName));
     	}
     	
     	if(this.monitorOnErrorJobChains != null && this.monitorOnErrorJobChains.size() > 0){
+    		found = true;
     		this.notifyRecovered(systemId,this.monitorOnErrorJobChains);
     		this.notifyError(systemId,this.monitorOnErrorJobChains);
     	}
@@ -1281,13 +1286,19 @@ public class SystemNotifierModel extends NotificationModel {
     	}
     	
     	if(this.monitorOnSuccessTimers.size() > 0 || this.monitorOnErrorTimers.size() > 0){
+    		found = true;
     		this.notifyTimer(systemId,this.monitorOnSuccessTimers,this.monitorOnErrorTimers);
     	}
     	else{
     		logger.info(String.format("%s: skip notify timer. found 0 timer definitions",functionName));
     	}
     	
-    	//TODO notify Timers
+    	if(!found){
+    		throw new Exception(String.format("%s: not found configured \"service_name_on_error\" or \"service_name_on_sucess\" for system id = %s (%s) ",
+    				functionName,
+    				this.systemId,
+    				this.systemFile.getAbsolutePath()));
+    	}
   }
 	
 	
