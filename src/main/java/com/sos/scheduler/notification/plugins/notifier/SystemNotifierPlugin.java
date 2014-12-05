@@ -20,10 +20,10 @@ import com.sos.scheduler.notification.db.DBItemSchedulerMonChecks;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonNotifications;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonSystemNotifications;
 import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
-import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
-import com.sos.scheduler.notification.helper.ElementNotificationMonitor;
 import com.sos.scheduler.notification.helper.EServiceMessagePrefix;
 import com.sos.scheduler.notification.helper.EServiceStatus;
+import com.sos.scheduler.notification.helper.ElementNotificationMonitor;
+import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
 
 /**
  * 
@@ -42,7 +42,7 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 	public static final String VARIABLE_TABLE_PREFIX_CHECKS = "MON_C";
 		
 	public static final String VARIABLE_ENV_PREFIX = "SCHEDULER_MON";
-	public static final String VARIABLE_ENV_PREFIX_TABLE_FIELD = VARIABLE_ENV_PREFIX+"_TABLE_FIELD";
+	public static final String VARIABLE_ENV_PREFIX_TABLE_FIELD = VARIABLE_ENV_PREFIX+"_TABLE";
 		
 	final org.slf4j.Logger logger = LoggerFactory
 			.getLogger(SystemNotifierPlugin.class);
@@ -177,33 +177,52 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		this.setDbItemTableFields(systemNotification,VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS);
 		this.setDbItemTableFields(check == null ? new DBItemSchedulerMonChecks() : check,VARIABLE_TABLE_PREFIX_CHECKS);
 		
-		this.setTableFieldElapsed("ORDER");
-		this.setTableFieldElapsed("TASK");
+		//NOTIFICATIONS
+		this.setTableFieldElapsed(
+				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_ORDER_TIME_ELAPSED",
+				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_ORDER_START_TIME",
+				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_ORDER_END_TIME");
+		this.setTableFieldElapsed(
+				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_TASK_TIME_ELAPSED",
+				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_TASK_START_TIME",
+				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_TASK_END_TIME");
+		this.setTableFieldElapsed(
+				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_ORDER_STEP_TIME_ELAPSED",
+				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_ORDER_STEP_START_TIME",
+				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_ORDER_STEP_END_TIME");
+		
+		//SYSNOTOFICATIONS
+		this.setTableFieldElapsed(
+				VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS+"_STEP_TIME_ELAPSED",
+				VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS+"_STEP_FROM_START_TIME",
+				VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS+"_STEP_TO_END_TIME");
+		
+		//CHECKS
+		this.setTableFieldElapsed(
+				VARIABLE_TABLE_PREFIX_CHECKS+"_STEP_TIME_ELAPSED",
+				VARIABLE_TABLE_PREFIX_CHECKS+"_STEP_FROM_START_TIME",
+				VARIABLE_TABLE_PREFIX_CHECKS+"_STEP_TO_END_TIME");
+		
 	}
 	
 	/**
 	 * 
-	 * @param name
+	 * @param newField
+	 * @param startTimeField
+	 * @param endTimeField
 	 * @throws Exception
 	 */
-	private void setTableFieldElapsed(String name) throws Exception{
-		String nost = VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_"+name+"_START_TIME";
-		String noet = VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_"+name+"_END_TIME";
-		if(this.tableFields.containsKey(nost) && this.tableFields.containsKey(noet)){
-			String vnost = this.tableFields.get(nost);
-			String vnoet = this.tableFields.get(noet);
+	private void setTableFieldElapsed(String newField,String startTimeField,String endTimeField) throws Exception{
+		this.tableFields.put(newField,"");
+		if(this.tableFields.containsKey(startTimeField) && this.tableFields.containsKey(endTimeField)){
+			String vnost = this.tableFields.get(startTimeField);
+			String vnoet = this.tableFields.get(endTimeField);
 			if(!SOSString.isEmpty(vnost) && !SOSString.isEmpty(vnoet)){
 				Date dnost = DBLayerSchedulerMon.getDateFromString(vnost);
 				Date dnoet = DBLayerSchedulerMon.getDateFromString(vnoet);
 				Long diffSeconds = dnoet.getTime()/1000-dnost.getTime()/1000;
-				this.tableFields.put(VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_"+name+"_TIME_ELAPSED",diffSeconds.toString());
+				this.tableFields.put(newField,diffSeconds.toString());
 			}
-			else{
-				this.tableFields.put(VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_"+name+"_TIME_ELAPSED","");
-			}
-		}
-		else{
-			this.tableFields.put(VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_"+name+"_TIME_ELAPSED","");
 		}
 	}
 	

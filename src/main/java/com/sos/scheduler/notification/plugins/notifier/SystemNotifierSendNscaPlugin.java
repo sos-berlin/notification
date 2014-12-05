@@ -146,6 +146,8 @@ public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
 		
 		this.resolveCommandAllTableFieldVars(dbLayer, notification,systemNotification,check);
 		this.resolveCommandServiceNameVar(systemNotification.getServiceName());
+		this.resolveCommandServiceStatusVar(this.getServiceStatusValue(status));
+		this.resolveCommandServiceMessagePrefixVar(this.getServiceMessagePrefixValue(prefix));
 		this.resolveCommandAllEnvVars();		
 		this.setCommandPrefix(prefix);
 		

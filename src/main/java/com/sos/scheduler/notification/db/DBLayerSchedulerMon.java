@@ -12,6 +12,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.SessionFactoryImplementor;
+import org.hibernate.exception.LockAcquisitionException;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
@@ -67,7 +68,7 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 	public final static String SEQUENCE_SCHEDULER_MON_CHECKS = "SCHEDULER_MON_CHECKS_ID_SEQ";
 	
 	/** in seconds */
-	public final static int RERUN_TRANSACTION_INTERVAL = 2;
+	public final static int RERUN_TRANSACTION_INTERVAL = 3;
 	
 	public final static String DEFAULT_EMPTY_NAME = "*";
 	
@@ -1061,13 +1062,18 @@ public class DBLayerSchedulerMon extends SOSHibernateDBLayer {
 				result = q.list();
 			}
 			catch(Exception ex){
-				logger.debug(String.format("executeQueryList. try rerun %s again in %s. cause exception = %s, sql = %s",
+				if(ex instanceof LockAcquisitionException){
+					logger.debug(String.format("executeQueryList. try rerun %s again in %s. cause exception = %s, sql = %s",
 						functionName,
 						RERUN_TRANSACTION_INTERVAL,
 						ex.getMessage()
 						,sql));
-				Thread.sleep(RERUN_TRANSACTION_INTERVAL*1000);
-				result = q.list();
+					Thread.sleep(RERUN_TRANSACTION_INTERVAL*1000);
+					result = q.list();
+				}
+				else{
+					throw new Exception(String.format("%s: %s , sql = %s",functionName,ex.getMessage(),sql));
+				}
 			}
 		}
 		catch(Exception ex){

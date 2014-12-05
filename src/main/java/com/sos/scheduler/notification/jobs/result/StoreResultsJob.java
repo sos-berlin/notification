@@ -46,7 +46,7 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 	 */
 	public void init() throws Exception {
 		this.db = new DBConnector();
-		this.db.connect(Options().scheduler_notification_hibernate_configuration_file.Value(),true);
+		this.db.connect(Options().scheduler_notification_hibernate_configuration_file.Value(),this.Options().force_reconnect.value());
 	}
 
 	/**

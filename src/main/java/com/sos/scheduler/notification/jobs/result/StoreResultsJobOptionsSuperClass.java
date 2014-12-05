@@ -416,7 +416,47 @@ public class StoreResultsJobOptionsSuperClass extends JSOptionsClass {
         this.mon_results_order_id = p_mon_results_order_id;
     }
 
-    
+    /**
+	 * \var force_reconnect :
+	 * 
+	 * 
+	 */
+	@JSOptionDefinition(name = "force_reconnect", description = "", key = "force_reconnect", type = "SOSOptionBoolean", mandatory = false)
+	public SOSOptionBoolean force_reconnect = new SOSOptionBoolean(
+			this, conClassName + ".force_reconnect", // HashMap-Key
+			"", // Titel
+			"false", // InitValue
+			"false", // DefaultValue
+			false // isMandatory
+	);
+
+	/**
+	 * \brief getforce_reconnect :
+	 * 
+	 * \details
+	 * 
+	 * 
+	 * \return
+	 * 
+	 */
+	public SOSOptionBoolean getforce_reconnect() {
+		return this.force_reconnect;
+	}
+
+	/**
+	 * \brief setforce_reconnect :
+	 * 
+	 * \details
+	 * 
+	 * 
+	 * @param reconnect
+	 *            :
+	 */
+	public void setforce_reconnect(
+			SOSOptionBoolean p_reconnect) {
+		this.force_reconnect = p_reconnect;
+	}
+
 	public StoreResultsJobOptionsSuperClass() {
 		objParentClass = this.getClass();
 	} // public StoreResultsJobOptionsSuperClass
