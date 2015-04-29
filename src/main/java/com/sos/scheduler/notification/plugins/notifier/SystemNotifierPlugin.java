@@ -10,6 +10,7 @@ import java.util.regex.Matcher;
 
 import javax.persistence.Column;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sos.spooler.Spooler;
@@ -19,6 +20,7 @@ import com.sos.hibernate.classes.DbItem;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonChecks;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonNotifications;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonSystemNotifications;
+import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
 import com.sos.scheduler.notification.helper.EServiceMessagePrefix;
 import com.sos.scheduler.notification.helper.EServiceStatus;
@@ -31,7 +33,8 @@ import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
  *
  */
 public class SystemNotifierPlugin implements ISystemNotifierPlugin {
-
+	final Logger logger = LoggerFactory.getLogger(SystemNotifierPlugin.class);
+	
 	private ElementNotificationMonitor notificationMonitor = null;
 	private String command;
 	private Map<String, String> tableFields = null;
@@ -43,16 +46,13 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		
 	public static final String VARIABLE_ENV_PREFIX = "SCHEDULER_MON";
 	public static final String VARIABLE_ENV_PREFIX_TABLE_FIELD = VARIABLE_ENV_PREFIX+"_TABLE";
-		
-	final org.slf4j.Logger logger = LoggerFactory
-			.getLogger(SystemNotifierPlugin.class);
 	
 	/**
 	 * 
 	 */
 	@Override
 	public void init(ElementNotificationMonitor monitor) throws Exception {
-		this.notificationMonitor = monitor;	
+		notificationMonitor = monitor;	
 	}
 	
 	/**
@@ -60,7 +60,7 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 	 * @param cmd
 	 */
 	public void setCommand(String cmd){
-		this.command = cmd;
+		command = cmd;
 	}
 	
 	/**
@@ -83,10 +83,10 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 	 * @return
 	 */
 	public String getServiceStatusValue(EServiceStatus status) throws Exception{
-		String functionName="getServiceStatusValue";
+		String method="getServiceStatusValue";
 		
 		if(this.getNotificationMonitor() == null){
-			throw new Exception(String.format("%s: this.getNotificationMonitor() is NULL",functionName));
+			throw new Exception(String.format("%s: this.getNotificationMonitor() is NULL",method));
 		}
 		
 		/**
@@ -98,8 +98,8 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		 */
 		String serviceStatus = "0";
 		if(status.equals(EServiceStatus.OK)){
-			if(this.getNotificationMonitor().getServiceStatusOnSuccess() != null){
-				serviceStatus = this.getNotificationMonitor().getServiceStatusOnSuccess();
+			if(getNotificationMonitor().getServiceStatusOnSuccess() != null){
+				serviceStatus = getNotificationMonitor().getServiceStatusOnSuccess();
 			}
 			else{
 				serviceStatus = EServiceStatus.OK.name();
@@ -107,13 +107,13 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		}
 		else{
 			if(this.getNotificationMonitor().getServiceStatusOnError() != null){
-				serviceStatus = this.getNotificationMonitor().getServiceStatusOnError();
+				serviceStatus = getNotificationMonitor().getServiceStatusOnError();
 			}
 			else{
 				serviceStatus = EServiceStatus.CRITICAL.name();
 			}
 		}
-		logger.info(String.format("%s: serviceStatus = %s",functionName,serviceStatus));
+		logger.info(String.format("%s: serviceStatus = %s",method,serviceStatus));
 		
 		return serviceStatus;
 	}
@@ -124,13 +124,13 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 	 * @return
 	 */
 	public String getServiceMessagePrefixValue(EServiceMessagePrefix prefix){
-		String functionName="getServiceMessagePrefixValue";
+		String method="getServiceMessagePrefixValue";
 		String servicePrefix = "";
 		if(prefix != null && !prefix.equals(EServiceMessagePrefix.NONE)){
 			servicePrefix = prefix.name()+" ";
 		}
 		
-		logger.info(String.format("%s: servicePrefix = %s",functionName,servicePrefix));
+		logger.info(String.format("%s: servicePrefix = %s",method,servicePrefix));
 		return servicePrefix;
 	}
 	
@@ -146,15 +146,16 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 			DBItemSchedulerMonNotifications notification,
 			DBItemSchedulerMonSystemNotifications systemNotification,
 			DBItemSchedulerMonChecks check) throws Exception{
-		if(this.command == null){ return;}
 		
-		this.setTableFields(notification,systemNotification,check);
+		if(command == null){ return;}
+		
+		setTableFields(notification,systemNotification,check);
 		for (Entry<String, String> entry : tableFields.entrySet()) {
 			String name = entry.getKey();
-			String value = this.normalizeVarValue(entry.getValue());
+			String value = normalizeVarValue(entry.getValue());
 			//wegen RegExp
 			value = Matcher.quoteReplacement(value);
-			this.command = this.command.replaceAll("%(?i)" + name + "%", value);
+			command = command.replaceAll("%(?i)" + name + "%", value);
 		}
 	}
 	
@@ -172,33 +173,33 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		if(systemNotification == null){
 			throw new Exception("Cannot get table fields. DbItem systemNotification is null");
 		}
-		this.tableFields = new HashMap<String,String>();
-		this.setDbItemTableFields(notification,VARIABLE_TABLE_PREFIX_NOTIFICATIONS);
-		this.setDbItemTableFields(systemNotification,VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS);
-		this.setDbItemTableFields(check == null ? new DBItemSchedulerMonChecks() : check,VARIABLE_TABLE_PREFIX_CHECKS);
+		tableFields = new HashMap<String,String>();
+		setDbItemTableFields(notification,VARIABLE_TABLE_PREFIX_NOTIFICATIONS);
+		setDbItemTableFields(systemNotification,VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS);
+		setDbItemTableFields(check == null ? new DBItemSchedulerMonChecks() : check,VARIABLE_TABLE_PREFIX_CHECKS);
 		
 		//NOTIFICATIONS
-		this.setTableFieldElapsed(
+		setTableFieldElapsed(
 				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_ORDER_TIME_ELAPSED",
 				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_ORDER_START_TIME",
 				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_ORDER_END_TIME");
-		this.setTableFieldElapsed(
+		setTableFieldElapsed(
 				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_TASK_TIME_ELAPSED",
 				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_TASK_START_TIME",
 				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_TASK_END_TIME");
-		this.setTableFieldElapsed(
+		setTableFieldElapsed(
 				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_ORDER_STEP_TIME_ELAPSED",
 				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_ORDER_STEP_START_TIME",
 				VARIABLE_TABLE_PREFIX_NOTIFICATIONS+"_ORDER_STEP_END_TIME");
 		
 		//SYSNOTOFICATIONS
-		this.setTableFieldElapsed(
+		setTableFieldElapsed(
 				VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS+"_STEP_TIME_ELAPSED",
 				VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS+"_STEP_FROM_START_TIME",
 				VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS+"_STEP_TO_END_TIME");
 		
 		//CHECKS
-		this.setTableFieldElapsed(
+		setTableFieldElapsed(
 				VARIABLE_TABLE_PREFIX_CHECKS+"_STEP_TIME_ELAPSED",
 				VARIABLE_TABLE_PREFIX_CHECKS+"_STEP_FROM_START_TIME",
 				VARIABLE_TABLE_PREFIX_CHECKS+"_STEP_TO_END_TIME");
@@ -213,15 +214,16 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 	 * @throws Exception
 	 */
 	private void setTableFieldElapsed(String newField,String startTimeField,String endTimeField) throws Exception{
-		this.tableFields.put(newField,"");
-		if(this.tableFields.containsKey(startTimeField) && this.tableFields.containsKey(endTimeField)){
-			String vnost = this.tableFields.get(startTimeField);
-			String vnoet = this.tableFields.get(endTimeField);
+		tableFields.put(newField,"");
+		
+		if(tableFields.containsKey(startTimeField) && tableFields.containsKey(endTimeField)){
+			String vnost = tableFields.get(startTimeField);
+			String vnoet = tableFields.get(endTimeField);
 			if(!SOSString.isEmpty(vnost) && !SOSString.isEmpty(vnoet)){
-				Date dnost = DBLayerSchedulerMon.getDateFromString(vnost);
-				Date dnoet = DBLayerSchedulerMon.getDateFromString(vnoet);
+				Date dnost = DBLayer.getDateFromString(vnost);
+				Date dnoet = DBLayer.getDateFromString(vnoet);
 				Long diffSeconds = dnoet.getTime()/1000-dnost.getTime()/1000;
-				this.tableFields.put(newField,diffSeconds.toString());
+				tableFields.put(newField,diffSeconds.toString());
 			}
 		}
 	}
@@ -240,12 +242,12 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
             	if(c != null){
             		String name = c.name().replaceAll("`","");
             		name = prefix+"_"+name;
-            		if(!this.tableFields.containsKey(name)){
+            		if(!tableFields.containsKey(name)){
             			Object objVal = m.invoke(obj); 
             			String val = ""; 
             			if(objVal != null){
             				if(objVal instanceof Timestamp){
-            					val = DBLayerSchedulerMon.getDateAsString((Date)objVal);
+            					val = DBLayer.getDateAsString((Date)objVal);
             				}
             				else if(objVal instanceof Boolean){
             					val = (Boolean)objVal ? "1" : "0";
@@ -255,7 +257,7 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
             				}
             			}
             			
-            			this.tableFields.put(name,val);
+            			tableFields.put(name,val);
             		}
             	}
             }
@@ -283,7 +285,7 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 	 * @param serviceName
 	 */
 	public void resolveCommandServiceNameVar(String serviceName){
-		this.resolveCommandVar("SERVICE_NAME",serviceName);
+		resolveCommandVar("SERVICE_NAME",serviceName);
 	}
 	
 	/**
@@ -291,7 +293,7 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 	 * @param prefix
 	 */
 	public void resolveCommandServiceMessagePrefixVar(String prefix){
-		this.resolveCommandVar("SERVICE_MESSAGE_PREFIX",prefix);
+		resolveCommandVar("SERVICE_MESSAGE_PREFIX",prefix);
 	}
 	
 	/**
@@ -299,7 +301,7 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 	 * @param serviceStatus
 	 */
 	public void resolveCommandServiceStatusVar(String serviceStatus){
-		this.resolveCommandVar("SERVICE_STATUS",serviceStatus);
+		resolveCommandVar("SERVICE_STATUS",serviceStatus);
 
 	}
 	
@@ -309,9 +311,9 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 	 */
 	public void resolveCommandAllEnvVars(){
 		@SuppressWarnings("unused")
-		String functionName="resolveCommandAllEnvVars";
+		String method="resolveCommandAllEnvVars";
 		
-		if(this.command == null){ return;}
+		if(command == null){ return;}
 		
 		Map<String, String> envs = System.getenv();  
 		for (Map.Entry<String, String> entry : envs.entrySet())  
@@ -321,8 +323,8 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		    //wegen RegExp
 			value = Matcher.quoteReplacement(value);
 		    
-			//logger.debug(String.format("%s: env var: name = %s, value = %S",functionName,name,value));
-		    this.command = this.command.replaceAll("%(?i)"+name+"%",value);
+			//logger.debug(String.format("%s: env var: name = %s, value = %S",method,name,value));
+		    command = command.replaceAll("%(?i)"+name+"%",value);
 		}  
 	}
 	
@@ -331,7 +333,7 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 	 * @return
 	 */
 	public ElementNotificationMonitor getNotificationMonitor(){
-		return this.notificationMonitor;
+		return notificationMonitor;
 	}
 	
     /**
@@ -339,11 +341,11 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
      * @return
      */
 	public String getCommand(){
-		return this.command;
+		return command;
 	}
 
 	public Map<String,String> getTableFields(){
-		return this.tableFields;
+		return tableFields;
 	}
 
 	/**
@@ -362,10 +364,10 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 	 * @param valValue
 	 */
 	private void resolveCommandVar(String varName, String varValue){
-		if(this.command == null){ return;}
+		if(command == null){ return;}
 		if(varValue == null){ return;}
 		
-		this.command = this.command.replaceAll("%"+varName+"%",varValue);
+		command = command.replaceAll("%"+varName+"%",varValue);
 
 	}	
 

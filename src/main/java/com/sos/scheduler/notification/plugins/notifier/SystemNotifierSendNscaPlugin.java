@@ -1,5 +1,6 @@
 package com.sos.scheduler.notification.plugins.notifier;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sos.spooler.Spooler;
@@ -60,11 +61,10 @@ import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
  *
  */
 public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
-
+	final Logger logger = LoggerFactory.getLogger(SystemNotifierSendNscaPlugin.class);
+	
 	private NagiosSettings settings = null;
-	final org.slf4j.Logger logger = LoggerFactory
-			.getLogger(SystemNotifierSendNscaPlugin.class);
-
+	
 	/**
 	 * 
 	 */
@@ -73,10 +73,10 @@ public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
 		
 		super.init(monitor);
 		
-		ElementNotificationMonitorInterface ni = this.getNotificationMonitor().getMonitorInterface();
+		ElementNotificationMonitorInterface ni = getNotificationMonitor().getMonitorInterface();
 		if(ni == null){
 			throw new Exception(String.format("%s: NotificationInterface element is missing (not configured)"
-					,this.getClass().getSimpleName()));
+					,getClass().getSimpleName()));
 		}
 		
 		NagiosSettingsBuilder nb = new NagiosSettingsBuilder()
@@ -100,7 +100,7 @@ public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
 		if(!SOSString.isEmpty(ni.getMonitorPassword())){
 			nb.withPassword(ni.getMonitorPassword());
 		}
-		this.settings = nb.create();
+		settings = nb.create();
 	}
 
 	/**
@@ -142,31 +142,31 @@ public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
 			throws Exception {
 
 		ElementNotificationMonitorInterface ni = this.getNotificationMonitor().getMonitorInterface();
-		this.setCommand(ni.getCommand());
+		setCommand(ni.getCommand());
 		
-		this.resolveCommandAllTableFieldVars(dbLayer, notification,systemNotification,check);
-		this.resolveCommandServiceNameVar(systemNotification.getServiceName());
-		this.resolveCommandServiceStatusVar(this.getServiceStatusValue(status));
-		this.resolveCommandServiceMessagePrefixVar(this.getServiceMessagePrefixValue(prefix));
-		this.resolveCommandAllEnvVars();		
-		this.setCommandPrefix(prefix);
+		resolveCommandAllTableFieldVars(dbLayer, notification,systemNotification,check);
+		resolveCommandServiceNameVar(systemNotification.getServiceName());
+		resolveCommandServiceStatusVar(this.getServiceStatusValue(status));
+		resolveCommandServiceMessagePrefixVar(this.getServiceMessagePrefixValue(prefix));
+		resolveCommandAllEnvVars();		
+		setCommandPrefix(prefix);
 		
 		MessagePayload payload = new MessagePayloadBuilder()
         .withHostname(ni.getServiceHost())
-        .withLevel(this.getLevel(status))
+        .withLevel(getLevel(status))
         .withServiceName(systemNotification.getServiceName())
-        .withMessage(this.getCommand())
+        .withMessage(getCommand())
         .create();
     		
 		logger.info(String.format("send to host= %s:%s service host= %s, service name = %s, level = %s, message = %s",
-				this.settings.getNagiosHost(),
-				this.settings.getPort(),
+				settings.getNagiosHost(),
+				settings.getPort(),
 				payload.getHostname(),
 				payload.getServiceName(),
 				payload.getLevel(),
 				payload.getMessage()));
 		
-		NagiosPassiveCheckSender sender = new NagiosPassiveCheckSender(this.settings);
+		NagiosPassiveCheckSender sender = new NagiosPassiveCheckSender(settings);
 		sender.send(payload);
 		
 		return 0;
@@ -194,14 +194,14 @@ public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
         .create();
     		
 		logger.info(String.format("send to host= %s:%s service host= %s, service name = %s, level = %s, message = %s",
-				this.settings.getNagiosHost(),
-				this.settings.getPort(),
+				settings.getNagiosHost(),
+				settings.getPort(),
 				payload.getHostname(),
 				payload.getServiceName(),
 				payload.getLevel(),
 				payload.getMessage()));
 		
-		NagiosPassiveCheckSender sender = new NagiosPassiveCheckSender(this.settings);
+		NagiosPassiveCheckSender sender = new NagiosPassiveCheckSender(settings);
 		sender.send(payload);
 		
 		return 0;
@@ -215,13 +215,13 @@ public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
 	private Level getLevel(EServiceStatus status){
 		Level level = null;
 		if(status.equals(EServiceStatus.OK)){
-			level = resolveServiceStatus(this.getNotificationMonitor().getServiceStatusOnSuccess());
+			level = resolveServiceStatus(getNotificationMonitor().getServiceStatusOnSuccess());
 			if(level == null){
 				level = Level.OK;
 			}
 		}
 		else{
-			level = resolveServiceStatus(this.getNotificationMonitor().getServiceStatusOnError());
+			level = resolveServiceStatus(getNotificationMonitor().getServiceStatusOnError());
 			if(level == null){
 				level = Level.CRITICAL;
 			}
@@ -234,14 +234,14 @@ public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
 	 * @param prefix
 	 */
 	private void setCommandPrefix(EServiceMessagePrefix prefix){
-		if(this.getCommand() == null){ return;}
+		if(getCommand() == null){ return;}
 		if(prefix == null){ return;}
 		
 		if(!prefix.equals(EServiceMessagePrefix.NONE)){
 			String command 		= this.getCommand().trim().toLowerCase();
 			String prefixName 	= prefix.name().trim().toLowerCase();
 			if(!command.startsWith(prefixName)){
-				this.setCommand(prefix.name()+" "+this.getCommand());
+				setCommand(prefix.name()+" "+getCommand());
 			}
 		}
 	}

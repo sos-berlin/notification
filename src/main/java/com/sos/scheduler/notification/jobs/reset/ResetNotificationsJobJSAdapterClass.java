@@ -1,5 +1,3 @@
-
-
 package com.sos.scheduler.notification.jobs.reset;
 
 import java.io.File;
@@ -11,46 +9,34 @@ import sos.util.SOSString;
 
 import com.sos.JSHelper.Exceptions.JobSchedulerException;
 /**
- * \class 		ResetNotificationsJobJSAdapterClass - JobScheduler Adapter for "ResetNotifications"
+ * 
+ * @author Robert Ehrlich
  *
- * \brief AdapterClass of ResetNotificationsJob for the SOSJobScheduler
- *
- * This Class ResetNotificationsJobJSAdapterClass works as an adapter-class between the SOS
- * JobScheduler and the worker-class ResetNotificationsJob.
- *
-
- *
- * see \see C:\Users\Robert Ehrlich\AppData\Local\Temp\scheduler_editor-7198855759937042280.html for more details.
- *
- * \verbatim ;
- * mechanicaly created by D:\Arbeit\scheduler\jobscheduler_data\re-dell_4444\config\JOETemplates\java\xsl\JSJobDoc2JSAdapterClass.xsl from http://www.sos-berlin.com at 20140512133635
- * \endverbatim
  */
 public class ResetNotificationsJobJSAdapterClass extends JobSchedulerJobAdapter  {
 	@SuppressWarnings("unused")
 	private static Logger		logger			= Logger.getLogger(ResetNotificationsJobJSAdapterClass.class);
 
-	ResetNotificationsJob objR = null;
-	ResetNotificationsJobOptions objO = null;
+	ResetNotificationsJob job = null;
+	ResetNotificationsJobOptions options = null;
 	
 	/**
 	 * 
 	 * @throws Exception
 	 */
 	public void init() throws Exception {
-		this.objR = new ResetNotificationsJob();
-		this.objO = objR.Options();
-		this.objO.CurrentNodeName(this.getCurrentNodeName());
-		this.objO.setAllOptions(getSchedulerParameterAsProperties(getJobOrOrderParameters()));
-	    this.objR.setJSJobUtilites(this);
-	    
-	    
-	    if(SOSString.isEmpty(objO.hibernate_configuration_file.Value())){
+		job = new ResetNotificationsJob();
+		options = job.Options();
+		options.CurrentNodeName(this.getCurrentNodeName());
+		options.setAllOptions(getSchedulerParameterAsProperties(getJobOrOrderParameters()));
+	    job.setJSJobUtilites(this);
+	    	    
+	    if(SOSString.isEmpty(options.hibernate_configuration_file.Value())){
 	    	File f = new File(new File(spooler.configuration_directory()).getParent(), "hibernate.cfg.xml");
-	    	objO.hibernate_configuration_file.Value(f.getAbsolutePath());
+	    	options.hibernate_configuration_file.Value(f.getAbsolutePath());
 	    }
 	    
-        this.objR.init();
+        job.init();
 	}
 
 	/**
@@ -58,8 +44,8 @@ public class ResetNotificationsJobJSAdapterClass extends JobSchedulerJobAdapter 
 	 * @throws Exception
 	 */
 	public void exit() throws Exception {
-		if(this.objR != null){
-			this.objR.exit();
+		if(job != null){
+			job.exit();
 		}
 	}
 	
@@ -69,7 +55,7 @@ public class ResetNotificationsJobJSAdapterClass extends JobSchedulerJobAdapter 
 	@Override
 	public boolean spooler_init() {
 		try{
-			this.init();
+			init();
 		}
 		catch(Exception ex){
 			spooler_log.error(ex.getMessage());
@@ -87,7 +73,7 @@ public class ResetNotificationsJobJSAdapterClass extends JobSchedulerJobAdapter 
 	public boolean spooler_process() throws Exception {
 		try {
 			super.spooler_process();
-			objR.Execute();
+			job.Execute();
 		}
 		catch (Exception e) {
             throw new JobSchedulerException("Fatal Error:" + e.getMessage(), e);

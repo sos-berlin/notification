@@ -24,10 +24,10 @@ import sos.util.SOSString;
 import com.sos.hibernate.classes.DbItem;
 
 @Entity
-@Table(name = DBLayerSchedulerMon.TABLE_SCHEDULER_MON_NOTIFICATIONS)
+@Table(name = DBLayer.TABLE_SCHEDULER_MON_NOTIFICATIONS)
 @SequenceGenerator(
-		name=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_NOTIFICATIONS, 
-		sequenceName=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_NOTIFICATIONS,
+		name=DBLayer.SEQUENCE_SCHEDULER_MON_NOTIFICATIONS, 
+		sequenceName=DBLayer.SEQUENCE_SCHEDULER_MON_NOTIFICATIONS,
 		allocationSize=1)
 /** uniqueConstraints = {@UniqueConstraint(columnNames ={"`SCHEDULER_ID`", "`STANDALONE`","`TASK_ID`","`STEP`","`ORDER_HISTORY_ID`"})}*/
 public class DBItemSchedulerMonNotifications extends DbItem implements Serializable {
@@ -65,12 +65,6 @@ public class DBItemSchedulerMonNotifications extends DbItem implements Serializa
     private Date    created;
     private Date  modified;
     
-    /** child table SCHEDULER_MON_RESULTS */
-    List<DBItemSchedulerMonResults> schedulerMonResults;
-    /** child table SCHEDULER_MON_SYSTEM_NOTIFICATIONS */
-    List<DBItemSchedulerMonSystemNotifications> schedulerMonSystemNotifications;
-        
-    
     List<Object> childs;
     
     /** */
@@ -85,33 +79,13 @@ public class DBItemSchedulerMonNotifications extends DbItem implements Serializa
     	this.setOrderHistoryId(this.defaultNumericValue);
     	this.setStep(this.defaultNumericValue);
     }
-    
-    /** child table SCHEDULER_MON_RESULTS */
-    @OneToMany(mappedBy="dbItemSchedulerMonNotifications")
-	public List <DBItemSchedulerMonResults> getSchedulerMonResults(){
-		return this.schedulerMonResults;
-	}
-	public void setSchedulerMonResults(List <DBItemSchedulerMonResults> val){
-		this.schedulerMonResults = val;
-    }
-    
-	/** child table SCHEDULER_MON_SYSTEM_NOTIFICATIONS */
-    @OneToMany(mappedBy="dbItemSchedulerMonNotifications")
-	public List <DBItemSchedulerMonSystemNotifications> getSchedulerMonSystemNotifications(){
-		return this.schedulerMonSystemNotifications;
-	}
-	public void setSchedulerMonSystemNotifications(List <DBItemSchedulerMonSystemNotifications> val){
-		this.schedulerMonSystemNotifications = val;
-    }
-	
-	
-    
+  
     /** id */
     @Id
     //@GeneratedValue(strategy=GenerationType.AUTO)
     @GeneratedValue(
         	strategy=GenerationType.AUTO,
-        	generator=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_NOTIFICATIONS)
+        	generator=DBLayer.SEQUENCE_SCHEDULER_MON_NOTIFICATIONS)
     @Column(name="`ID`", nullable = false)
     public Long getId() {
         return this.id;
@@ -121,7 +95,7 @@ public class DBItemSchedulerMonNotifications extends DbItem implements Serializa
     //@GeneratedValue(strategy=GenerationType.AUTO)
     @GeneratedValue(
     	strategy=GenerationType.AUTO,
-    	generator=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_NOTIFICATIONS)
+    	generator=DBLayer.SEQUENCE_SCHEDULER_MON_NOTIFICATIONS)
     @Column(name="`ID`", nullable = false)
     public void setId(Long val) {
        this.id = val;

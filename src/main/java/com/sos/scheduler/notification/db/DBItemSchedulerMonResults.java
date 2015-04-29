@@ -8,8 +8,6 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -21,10 +19,10 @@ import com.sos.hibernate.classes.DbItem;
 
 //@MappedSuperclass
 @Entity
-@Table(name = DBLayerSchedulerMon.TABLE_SCHEDULER_MON_RESULTS)
+@Table(name = DBLayer.TABLE_SCHEDULER_MON_RESULTS)
 @SequenceGenerator(
-		name=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_RESULTS, 
-		sequenceName=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_RESULTS,
+		name=DBLayer.SEQUENCE_SCHEDULER_MON_RESULTS, 
+		sequenceName=DBLayer.SEQUENCE_SCHEDULER_MON_RESULTS,
 		allocationSize=1)
 public class DBItemSchedulerMonResults extends DbItem implements Serializable {
 	
@@ -42,29 +40,15 @@ public class DBItemSchedulerMonResults extends DbItem implements Serializable {
 	private Date created;
 	private Date modified;
 
-	/** parent table SCHEDULER_MON_NOTIFICATIONS */
-	private DBItemSchedulerMonNotifications dbItemSchedulerMonNotifications;
-	
 	public DBItemSchedulerMonResults() {
 
 	}
 	
-	@ManyToOne(optional = true)
-	@JoinColumn(name = "`NOTIFICATION_ID`", insertable = false, updatable = false)
-	public DBItemSchedulerMonNotifications getDbItemSchedulerMonNotifications() {
-		return this.dbItemSchedulerMonNotifications;
-	}
-	public void setDbItemSchedulerMonNotifications(
-			DBItemSchedulerMonNotifications val) {
-		this.dbItemSchedulerMonNotifications = val;
-	}
-
-
 	/** id */
     @Id
     @GeneratedValue(
         	strategy=GenerationType.AUTO,
-        	generator=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_RESULTS)
+        	generator=DBLayer.SEQUENCE_SCHEDULER_MON_RESULTS)
     @Column(name="`ID`", nullable = false)
     public Long getId() {
         return this.id;
@@ -73,7 +57,7 @@ public class DBItemSchedulerMonResults extends DbItem implements Serializable {
     @Id
     @GeneratedValue(
         	strategy=GenerationType.AUTO,
-        	generator=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_RESULTS)
+        	generator=DBLayer.SEQUENCE_SCHEDULER_MON_RESULTS)
     @Column(name="`ID`", nullable = false)
     public void setId(Long val) {
        this.id = val;

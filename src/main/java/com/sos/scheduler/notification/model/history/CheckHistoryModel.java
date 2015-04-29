@@ -1,6 +1,7 @@
 package com.sos.scheduler.notification.model.history;
 
 import java.io.File;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -8,6 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.hibernate.Criteria;
+import org.hibernate.ScrollMode;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -17,16 +21,21 @@ import org.w3c.dom.NodeList;
 import sos.util.SOSString;
 import sos.xml.SOSXMLXPath;
 
-import com.sos.scheduler.notification.db.DBItemSchedulerHistory;
+import com.sos.hibernate.classes.SOSHibernateBatchProcessor;
+import com.sos.hibernate.classes.SOSHibernateConnection;
+import com.sos.hibernate.classes.SOSHibernateResultSetProcessor;
+import com.sos.scheduler.notification.db.DBItemNotificationSchedulerHistoryOrderStep;
+import com.sos.scheduler.notification.db.DBItemNotificationSchedulerVariables;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonChecks;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonNotifications;
-import com.sos.scheduler.notification.db.DBItemSchedulerOrderHistory;
-import com.sos.scheduler.notification.db.DBItemSchedulerOrderStepHistory;
+import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
+import com.sos.scheduler.notification.helper.CounterCheckHistory;
 import com.sos.scheduler.notification.helper.ElementTimer;
 import com.sos.scheduler.notification.helper.ElementTimerJobChain;
 import com.sos.scheduler.notification.helper.NotificationXmlHelper;
 import com.sos.scheduler.notification.jobs.history.CheckHistoryJobOptions;
+import com.sos.scheduler.notification.model.INotificationModel;
 import com.sos.scheduler.notification.model.NotificationModel;
 import com.sos.scheduler.notification.plugins.history.ICheckHistoryPlugin;
 
@@ -35,7 +44,7 @@ import com.sos.scheduler.notification.plugins.history.ICheckHistoryPlugin;
  * @author Robert Ehrlich
  * 
  */
-public class CheckHistoryModel extends NotificationModel {
+public class CheckHistoryModel extends NotificationModel implements INotificationModel {
 
 	final Logger logger = LoggerFactory.getLogger(CheckHistoryModel.class);
 
@@ -44,52 +53,43 @@ public class CheckHistoryModel extends NotificationModel {
 	private LinkedHashMap<String, ArrayList<String>> jobChains = null;
 	private boolean checkInsertNotifications = true;
 	private List<ICheckHistoryPlugin> plugins = null;
+	private CounterCheckHistory counter;
 	
-	private int countInsert = 0;
-	private int countUpdate = 0;
-	private int countSkip = 0;
-	private int countTotal = 0;
-	private int countInsertTimer = 0;
-
 	/**
 	 * 
 	 */
-	public CheckHistoryModel() {
-		this.plugins = new ArrayList<ICheckHistoryPlugin>();
-		this.timers = new LinkedHashMap<String, ElementTimer>();
-		this.jobChains = new LinkedHashMap<String,ArrayList<String>>();
+	public CheckHistoryModel(SOSHibernateConnection conn,
+			CheckHistoryJobOptions opt) throws Exception{
+		
+		super(conn);
+		if (opt == null) {
+			throw new Exception("CheckHistoryJobOptions is NULL");
+		}
+		options = opt;
+		
+		initConfig();
+		registerPlugins();
+		pluginsOnInit(timers,options,getDbLayer());
 	}
 
 	/**
 	 * 
 	 */
 	private void initCounters(){
-		this.countInsert = 0;
-		this.countUpdate = 0;
-		this.countSkip = 0;
-		this.countTotal = 0;
-		this.countInsertTimer = 0;
+		counter = new CounterCheckHistory();
 	}
-	
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	public void init(CheckHistoryJobOptions opt, DBLayerSchedulerMon db) throws Exception {
-		super.init(db);
 
-		this.options = opt;
-		
-		this.initConfig();
-		this.registerPlugins();
-		this.pluginsOnInit(this.timers, this.options, this.getDbLayer());
-	}
 
 	/**
 	 * 
 	 * @throws Exception
 	 */
 	public void initConfig() throws Exception {
+		plugins = new ArrayList<ICheckHistoryPlugin>();
+		timers = new LinkedHashMap<String, ElementTimer>();
+		jobChains = new LinkedHashMap<String,ArrayList<String>>();
+		
+		
 		File dir = null;
 
 		File schemaFile = new File(options.schema_configuration_file.Value());
@@ -112,7 +112,7 @@ public class CheckHistoryModel extends NotificationModel {
 
 		logger.debug(String.format("schemaFile=%s, configDir=%s",schemaFile,dir.getAbsolutePath()));
 				
-		this.readConfigFiles(dir);
+		readConfigFiles(dir);
 	}
 
 	/**
@@ -121,34 +121,34 @@ public class CheckHistoryModel extends NotificationModel {
 	 * @throws Exception
 	 */
 	private void readConfigFiles(File dir) throws Exception {
-		String functionName = "readConfigFiles";
+		String method = "readConfigFiles";
 		
-		this.jobChains = new LinkedHashMap<String,ArrayList<String>>();
-		this.timers = new LinkedHashMap<String, ElementTimer>();
-		this.checkInsertNotifications = true;
+		jobChains = new LinkedHashMap<String,ArrayList<String>>();
+		timers = new LinkedHashMap<String, ElementTimer>();
+		checkInsertNotifications = true;
 				
 		File[] files = getAllConfigurationFiles(dir);
 		if (files.length == 0) {
 			throw new Exception(String.format(
 					"%s: configuration files not found. directory : %s",
-					functionName,
+					method,
 					dir.getAbsolutePath()));
 		}
 
 		for (int i = 0; i < files.length; i++) {
 			File f = files[i];
 			logger.info(String.format("%s: read configuration file %s",
-					functionName,
+					method,
 					f.getAbsolutePath()));
 
 			SOSXMLXPath xpath = new SOSXMLXPath(f.getAbsolutePath());
 			
-			this.setConfigAllJobChains(xpath);
-			this.setConfigTimers(xpath);
+			setConfigAllJobChains(xpath);
+			setConfigTimers(xpath);
 		}
 
-		if(this.jobChains.size() == 0 && this.timers.size() == 0){
-			throw new Exception(String.format("%s: jobChains or timers definitions not founded",functionName));
+		if(jobChains.size() == 0 && timers.size() == 0){
+			throw new Exception(String.format("%s: jobChains or timers definitions not founded",method));
 		}
 		
 	}
@@ -163,8 +163,8 @@ public class CheckHistoryModel extends NotificationModel {
 		for (int j = 0; j < nlTimers.getLength(); j++) {
 			Node n = nlTimers.item(j);
 			String name = NotificationXmlHelper.getTimerName((Element)n);
-			if (name != null && !this.timers.containsKey(name)) {
-				this.timers.put(name, new ElementTimer(n));
+			if (name != null && !timers.containsKey(name)) {
+				timers.put(name, new ElementTimer(n));
 			}
 		}
 	}
@@ -176,10 +176,11 @@ public class CheckHistoryModel extends NotificationModel {
 	 */
 	private void setConfigAllJobChains(SOSXMLXPath xpath) throws Exception{
 		NodeList notificationJobChains = NotificationXmlHelper.selectNotificationJobChainDefinitions(xpath);
-		this.setConfigJobChains(xpath,notificationJobChains);
-		if(this.checkInsertNotifications){
+		
+		setConfigJobChains(xpath,notificationJobChains);
+		if(checkInsertNotifications){
 			NodeList timerJobChains = NotificationXmlHelper.selectTimerJobChainDefinitions(xpath);
-			this.setConfigJobChains(xpath,timerJobChains);
+			setConfigJobChains(xpath,timerJobChains);
 		}
 	}
 	
@@ -202,33 +203,23 @@ public class CheckHistoryModel extends NotificationModel {
 			
 			ArrayList<String> al = new ArrayList<String>();
 			if(schedulerId.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME) && name.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME)){
-				this.jobChains = new LinkedHashMap<String,ArrayList<String>>();
+				jobChains = new LinkedHashMap<String,ArrayList<String>>();
 				al.add(name);
-				this.jobChains.put(schedulerId,al);
-				this.checkInsertNotifications = false;
+				jobChains.put(schedulerId,al);
+				checkInsertNotifications = false;
 				return;
 			}
 			
-			if(this.jobChains.containsKey(schedulerId)){
-				al = this.jobChains.get(schedulerId);
+			if(jobChains.containsKey(schedulerId)){
+				al = jobChains.get(schedulerId);
 			}
 			if(!al.contains(name)){
 				al.add(name);
 			}
-			this.jobChains.put(schedulerId,al);
+			jobChains.put(schedulerId,al);
 		}
 	}
 	
-	/**
-     * 
-     */
-	@Override
-	public void exit() throws Exception {
-		logger.info(String.format("exit"));
-
-		this.pluginsOnExit(this.timers, this.options, this.getDbLayer());
-		super.exit();
-	}
 
 	/**
 	 * @TODO eventuell einen Fleck für insertTimer setzen, 
@@ -238,28 +229,28 @@ public class CheckHistoryModel extends NotificationModel {
 	 * @return
 	 * @throws Exception
 	 */
-	private boolean checkInsertNotification(DBItemSchedulerOrderHistory order) throws Exception{
+	private boolean checkInsertNotification(DBItemNotificationSchedulerHistoryOrderStep step) throws Exception{
 		
 		//Indent für die Ausgabe
-		String functionName = "  checkInsertNotification";
+		String method = "  checkInsertNotification";
 		logger.debug(String.format("%s: checkInsertNotifications = %s",
-				functionName,
-				this.checkInsertNotifications));
+				method,
+				checkInsertNotifications));
 				
 		
-		if(!this.checkInsertNotifications){
+		if(!checkInsertNotifications){
 			return true;
 		}
-		if(this.jobChains == null || this.jobChains.size() == 0){
+		if(jobChains == null || jobChains.size() == 0){
 			return false;
 		}
 		
 		logger.debug(String.format("%s: order: schedulerId = %s, jobChain = %s",
-				functionName,
-				order.getSpoolerId(),
-				order.getJobChain()));
+				method,
+				step.getOrderSchedulerId(),
+				step.getOrderJobChain()));
 		
-		Set<Map.Entry<String, ArrayList<String>>> set = this.jobChains.entrySet();
+		Set<Map.Entry<String, ArrayList<String>>> set = jobChains.entrySet();
 		for (Map.Entry<String, ArrayList<String>> jc : set) {
 			String schedulerId = jc.getKey();
 			ArrayList<String> jobChains = jc.getValue();
@@ -267,13 +258,13 @@ public class CheckHistoryModel extends NotificationModel {
 			boolean checkJobChains = true;
 			if (!schedulerId.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME)) {
 				try{
-					if (!order.getSpoolerId().matches(schedulerId)) {
+					if (!step.getOrderSchedulerId().matches(schedulerId)) {
 						checkJobChains = false;
 					}
 				}
 				catch(Exception ex){
 					throw new Exception(String.format("%s: check with configured scheduler_id = %s: %s",
-							functionName,
+							method,
 							schedulerId,
 							ex));
 				}
@@ -283,7 +274,7 @@ public class CheckHistoryModel extends NotificationModel {
 					String jobChain = jobChains.get(i);
 					
 					logger.debug(String.format("%s: check with configured: schedulerId = %s, jobChain = %s",
-							functionName,
+							method,
 							schedulerId,
 							jobChain));
 					
@@ -291,13 +282,13 @@ public class CheckHistoryModel extends NotificationModel {
 					  return true;	
 					}
 					try{
-						if(order.getJobChain().matches(jobChain)) {
+						if(step.getOrderJobChain().matches(jobChain)) {
 							return true;
 						}
 					}
 					catch(Exception ex){
 						throw new Exception(String.format("%s: check with configured scheduler_id = %s, name = %s: %s",
-								functionName,
+								method,
 								schedulerId,
 								jobChain,
 								ex));
@@ -316,9 +307,9 @@ public class CheckHistoryModel extends NotificationModel {
 	 * @return
 	 * @throws Exception
 	 */
-	private Date getLastNotificationDate(Date dateTo) throws Exception{
-		Date dateFrom = this.getDbLayer().getLastNotificationDate();
-		int maxAge = this.options.max_history_age.value();
+	private Date getLastNotificationDate(DBItemNotificationSchedulerVariables dbItem, Date dateTo) throws Exception{
+		Date dateFrom = getDbLayer().getLastNotificationDate(dbItem);
+		int maxAge = NotificationModel.resolveAge2Minutes(options.max_history_age.Value());
 		
 		if(dateFrom != null){
 			Long startTimeMinutes = dateFrom.getTime() / 1000 / 60;
@@ -329,7 +320,7 @@ public class CheckHistoryModel extends NotificationModel {
 			}
 		}
 		if(dateFrom == null){
-			dateFrom = DBLayerSchedulerMon.getDateTimeMinusMinutes(dateTo,maxAge);
+			dateFrom = DBLayer.getDateTimeMinusMinutes(dateTo,maxAge);
 		}
 		return dateFrom;
 	}
@@ -338,167 +329,190 @@ public class CheckHistoryModel extends NotificationModel {
 	 * 
 	 * @throws Exception
 	 */
+	private void updateExistingNotifications() throws Exception{
+		String method = "updateExistingNotifications";
+	
+		getDbLayer().getConnection().beginTransaction();
+		
+		
+		Date maxStartTime = null;
+		int uncompletedAge = NotificationModel.resolveAge2Minutes(options.max_uncompleted_age.Value());
+		if(uncompletedAge > 0){
+			maxStartTime = DBLayer.getCurrentDateTimeMinusMinutes(uncompletedAge);
+		}
+				
+		int result = getDbLayer().updateUncompletedNotifications(options.allow_db_dependent_queries.value(),maxStartTime);
+		logger.info(String.format("%s: bulk updateUncompletedNotifications, max_uncompleted_age = %s (from %s), updated = %s",
+				method,
+				options.max_uncompleted_age.Value(),
+				DBLayer.getDateAsString(maxStartTime),
+				result));
+		
+		result = getDbLayer().setOrderNotificationsRecovered();
+		logger.info(String.format("%s: bulk setOrderNotificationsRecovered, updated = %s",method,result));
+		
+		getDbLayer().getConnection().commit();
+	}
+	
+	/**
+	 * 
+	 * @throws Exception
+	 */
 	@Override
 	public void process() throws Exception {
-		String functionName = "process";
-		super.process();
-
-		this.getDbLayer().beginTransaction();
-
-		logger.info(String.format("%s: bulk updateNotifications",functionName));
-		this.getDbLayer().updateNotifications(this.options.allow_db_dependent_queries.value());
-
-		logger.info(String
-				.format("%s: bulk setOrderNotificationsRecovered",functionName));
-		this.getDbLayer().setOrderNotificationsRecovered();
-		this.getDbLayer().commit();
-
-		Date dateTo = DBLayerSchedulerMon.getCurrentDateTime();
-		Date dateFrom = this.getLastNotificationDate(dateTo);
+		String method = "process";
 		
+		Criteria criteria = null;
 		
-		this.initCounters();
+		SOSHibernateResultSetProcessor rspHistory = new SOSHibernateResultSetProcessor(getDbLayer().getConnection());
+		SOSHibernateBatchProcessor bpNotifications = new SOSHibernateBatchProcessor(getDbLayer().getConnection());
+		SOSHibernateBatchProcessor bpTimers = new SOSHibernateBatchProcessor(getDbLayer().getConnection());
+				
+		initCounters();
 		
-		List<DBItemSchedulerOrderStepHistory> steps = this.getDbLayer().getOrderStepsAsList(dateFrom, dateTo);
-		this.countTotal = steps.size();
-		logger.info(String
-				.format("%s: found %s entries. getOrderStepsAsList (dateFrom = %s (UTC), dateTo = %s (UTC))",
-						functionName,
-						this.countTotal,
-						DBLayerSchedulerMon.getDateAsString(dateFrom),
-						DBLayerSchedulerMon.getDateAsString(dateTo)));
-		/**
-		ScrollableResults sr = this.getDbLayer().getOrderStepsScrollable(
-				dateFrom, dateTo);
-		int m = 0;
-		*/
-		
-		this.getDbLayer().beginTransaction();
+		Date dateTo = DBLayer.getCurrentDateTime();
+		Date dateFrom = null;
+		DBItemNotificationSchedulerVariables schedulerVariable = null;
+		boolean success = false;
 		
 		try {
-			for(int m=0;m<steps.size();m++){
-			//while (sr.next()) {
-				//m++;
-				//this.getDbLayer().flushScrollableResults(m);
-				//DBItemSchedulerOrderStepHistory step = (DBItemSchedulerOrderStepHistory)sr.get(0);
+			DateTime start = new DateTime();
+		
+			schedulerVariable = getDbLayer().getSchedulerVariable();
+			dateFrom = getLastNotificationDate(schedulerVariable,dateTo);
+						
+			updateExistingNotifications();
 				
-				DBItemSchedulerOrderStepHistory step = steps.get(m);
-				DBItemSchedulerOrderHistory order = step.getSchedulerOrderHistoryDBItem();
-				DBItemSchedulerHistory task = step.getSchedulerHistoryDBItem();
-				if(order == null){
-					this.countSkip++;
+			bpNotifications.createInsertBatch(DBItemSchedulerMonNotifications.class);
+			bpTimers.createInsertBatch(DBItemSchedulerMonChecks.class);
+			
+			getDbLayer().getConnection().beginTransaction();
+			criteria = getDbLayer().getSchedulerHistorySteps(dateFrom, dateTo);
+			ResultSet rsHistory = rspHistory.createResultSet(DBItemNotificationSchedulerHistoryOrderStep.class,criteria,ScrollMode.FORWARD_ONLY);
+			while (rsHistory.next()) {
+				counter.addTotal();
+				
+				DBItemNotificationSchedulerHistoryOrderStep step = (DBItemNotificationSchedulerHistoryOrderStep) rspHistory.get();
+				
+				if (step.getOrderHistoryId() == null && step.getOrderId() == null && step.getOrderStartTime() == null) {
+					counter.addSkip();
 					logger.debug(String
-							.format("%s: %s) order object is null. order notification: step = %s, taskId = %s ",
-									functionName,
-									m,
-									step.getState(),
-									step.getTaskId()));
+							.format("%s: %s) order object is null. step = %s, historyId = %s ",
+									method, counter.getTotal(), step.getStepState(),
+									step.getStepHistoryId()));
+
 					continue;
 				}
-				if(task == null){
-					this.countSkip++;
+				if (step.getTaskId() == null && step.getTaskJobName() == null && step.getTaskCause() == null) {
+					counter.addSkip();
 					logger.debug(String
-							.format("%s: %s) task object is null. order notification: jobChain = %s, order = %s, step = %s, taskId = %s ",
-									functionName,
-									m,
-									order.getJobChain(),
-									order.getOrderId(),
-									step.getState(),
-									step.getTaskId()));
+							.format("%s: %s) task object is null. jobChain = %s, order = %s, step = %s, taskId = %s ",
+									method, counter.getTotal(), step.getOrderJobChain(),
+									step.getOrderId(), step.getStepState(),
+									step.getStepTaskId()));
 					continue;
 				}
-				logger.debug(String.format("%s: %s) order schedulerId = %s, jobChain = %s, order id = %s, step = %s, step state = %s",
-						functionName,
-						m,
-						order.getSchedulerId(),
-						order.getJobChain(),
-						order.getOrderId(),
-						step.getId().getStep(),
-						step.getState()));
-				
-				if(!this.checkInsertNotification(order)){
-					this.countSkip++;
+
+				logger.debug(String
+						.format("%s: %s) schedulerId = %s, orderHistoryId = %s, jobChain = %s, order id = %s, step = %s, step state = %s",
+								method, counter.getTotal(), step.getOrderSchedulerId(),
+								step.getOrderHistoryId(), step.getOrderJobChain(),
+								step.getOrderId(), step.getStepStep(),
+								step.getStepState()));
+
+				if(!this.checkInsertNotification(step)){
+					counter.addSkip();
 					logger.debug(String.format("%s: %s) skip insert notification. order schedulerId = %s, jobChain = %s, order id = %s, step = %s, step state = %s",
-							functionName,
-							m,
-							order.getSchedulerId(),
-							order.getJobChain(),
-							order.getOrderId(),
-							step.getId().getStep(),
-							step.getState()));
+							method,
+							counter.getTotal(),
+							step.getOrderSchedulerId(),
+							step.getOrderJobChain(),
+							step.getOrderId(),
+							step.getStepStep(),
+							step.getStepState()));
 					continue;
 				}
-								
+				
+				if(counter.getTotal() % options.batch_size.value() == 0){
+					counter.addBatchInsert(SOSHibernateBatchProcessor.getExecutedBatchSize(bpNotifications.executeBatch()));
+					counter.addBatchInsertTimer(SOSHibernateBatchProcessor.getExecutedBatchSize(bpTimers.executeBatch()));
+				}
+				
 				DBItemSchedulerMonNotifications dbItem = this.getDbLayer().getNotification(
-										order.getSchedulerId(), false,
-										step.getTaskId(),
-										step.getId().getStep(),
-										order.getHistoryId());
+						step.getOrderSchedulerId(), false,
+						step.getTaskId(),
+						step.getStepStep(),
+						step.getOrderHistoryId());
 
-				boolean hasStepError = (step.getError() != null && step.getError());
-
+				boolean hasStepError = step.getStepError();
 				if (dbItem == null) {
-					this.countInsert++;
+					counter.addInsert();
 					logger.debug(String.format("%s: %s) create new notification. order schedulerId = %s, jobChain = %s, order id = %s, step = %s, step state = %s",
-							functionName,
-							m,
-							order.getSchedulerId(),
-							order.getJobChain(),
-							order.getOrderId(),
-							step.getId().getStep(),
-							step.getState()));
+							method,
+							counter.getTotal(),
+							step.getOrderSchedulerId(),
+							step.getOrderJobChain(),
+							step.getOrderId(),
+							step.getStepStep(),
+							step.getStepState()));
 
-					dbItem = this.getDbLayer().createNotification(
-							order.getSchedulerId(), false,
+					dbItem = getDbLayer().createNotification(
+							step.getOrderSchedulerId(), false,
 							step.getTaskId(),
-							step.getId().getStep(),
-							order.getHistoryId(),
-							order.getJobChain(),
-							order.getJobChain(),
-							order.getOrderId(), order.getOrderId(),
-							order.getStartTime(),
-							order.getEndTime(), step.getState(),
-							step.getStartTime(), step.getEndTime(),
-							task.getJobName(), task.getJobName(),
-							task.getStartTime(), task.getEndTime(),
-							false, hasStepError,
-							step.getErrorCode(),
-							step.getErrorText());
+							step.getStepStep(),
+							step.getOrderHistoryId(),
+							step.getOrderJobChain(),
+							step.getOrderJobChain(),
+							step.getOrderId(), 
+							step.getOrderId(),
+							step.getOrderStartTime(),
+							step.getOrderEndTime(), 
+							step.getStepState(),
+							step.getStepStartTime(), 
+							step.getStepEndTime(),
+							step.getTaskJobName(), 
+							step.getTaskJobName(),
+							step.getTaskStartTime(), 
+							step.getTaskEndTime(),
+							false, 
+							hasStepError,
+							step.getStepErrorCode(),
+							step.getStepErrorText());
 
-					this.getDbLayer().save(dbItem);
+					bpNotifications.addBatch(dbItem);
 				}
 				else {
-					this.countUpdate++;
+					counter.addUpdate();
 					//kann inserted sein durch StoreResult Job
 					
-					dbItem.setJobChainName(order.getJobChain());
-					dbItem.setJobChainTitle(order.getJobChain());
+					dbItem.setJobChainName(step.getOrderJobChain());
+					dbItem.setJobChainTitle(step.getOrderJobChain());
 
-					dbItem.setOrderId(order.getOrderId());
-					dbItem.setOrderTitle(order.getOrderId());
-					dbItem.setOrderStartTime(order.getStartTime());
-					dbItem.setOrderEndTime(order.getEndTime());
+					dbItem.setOrderId(step.getOrderId());
+					dbItem.setOrderTitle(step.getOrderId());
+					dbItem.setOrderStartTime(step.getOrderStartTime());
+					dbItem.setOrderEndTime(step.getOrderEndTime());
 
-					dbItem.setOrderStepState(step.getState());
-					dbItem.setOrderStepStartTime(step.getStartTime());
-					dbItem.setOrderStepEndTime(step.getEndTime());
+					dbItem.setOrderStepState(step.getStepState());
+					dbItem.setOrderStepStartTime(step.getStepStartTime());
+					dbItem.setOrderStepEndTime(step.getStepEndTime());
 
-					dbItem.setJobName(task.getJobName());
-					dbItem.setJobTitle(task.getJobName());
-					dbItem.setTaskStartTime(task.getStartTime());
-					dbItem.setTaskEndTime(task.getEndTime());
+					dbItem.setJobName(step.getTaskJobName());
+					dbItem.setJobTitle(step.getTaskJobName());
+					dbItem.setTaskStartTime(step.getTaskStartTime());
+					dbItem.setTaskEndTime(step.getTaskEndTime());
 
 					// hatte error und wird auf nicht error gesetzt
 					dbItem.setRecovered(dbItem.getError() && !hasStepError);
 					dbItem.setError(hasStepError);
-					dbItem.setErrorCode(step.getErrorCode());
-					dbItem.setErrorText(step.getErrorText());
+					dbItem.setErrorCode(step.getStepErrorCode());
+					dbItem.setErrorText(step.getStepErrorText());
 
-					dbItem.setModified(DBLayerSchedulerMon.getCurrentDateTime());
+					dbItem.setModified(DBLayer.getCurrentDateTime());
 
 					logger.debug(String.format("%s: %s) update notification. notification id = %s, order schedulerId = %s, jobChain = %s, order id = %s, step = %s, step state = %s",
-							functionName,
-							m,
+							method,
+							counter.getTotal(),
 							dbItem.getId(),
 							dbItem.getSchedulerId(),
 							dbItem.getJobChainName(),
@@ -506,39 +520,52 @@ public class CheckHistoryModel extends NotificationModel {
 							dbItem.getStep(),
 							dbItem.getOrderStepState()));
 					
-					this.getDbLayer().update(dbItem);
+					getDbLayer().getConnection().update(dbItem);
 				}
-				this.insertTimer(dbItem);
-						//this.getDbLayer().commit();
-			}
-		} catch (Exception ex) {
-			this.getDbLayer().rollback();
-			throw new Exception(ex);
-
-		} finally {
-			/**
-			try {
-				if (sr != null) {
-					sr.close();
-				}
-			} catch (Exception e) {
-			}*/
+				
+				bpTimers = insertTimer(bpTimers,dbItem);	
+			}//while
+			
+			counter.addBatchInsert(SOSHibernateBatchProcessor.getExecutedBatchSize(bpNotifications.executeBatch()));
+			counter.addBatchInsertTimer(SOSHibernateBatchProcessor.getExecutedBatchSize(bpTimers.executeBatch()));
+			
+			getDbLayer().getConnection().commit();
+			
+			success = true;
+			
+			logger.info(String.format("%s: duration = %s",method,NotificationModel.getDuration(start,new DateTime())));
+		} 
+		catch (Exception ex) {
+			getDbLayer().getConnection().rollback();
+			//schedulerConnection.rollback();
+			Throwable e = SOSHibernateConnection.getException(ex);
+			throw new Exception(String.format("%s: %s", method, e.toString()),e);
+		}
+		finally{
+			try{bpNotifications.close();}catch(Exception ex){}
+			try{bpTimers.close();}catch(Exception ex){}
+			try{if(rspHistory != null){	rspHistory.close();}}catch(Exception ex){}
+		}
+		
+		logger.info(String
+				.format("%s: total %s: inserted = %s (batch = %s), updated = %s, skipped = %s, inserted timers = %s (batch = %s)",
+						method,
+						counter.getTotal(),
+						counter.getInsert(),
+						counter.getBatchInsert(),
+						counter.getUpdate(),
+						counter.getSkip(),
+						counter.getInsertTimer(),
+						counter.getBatchInsertTimer()));
+		
+		if(success){
+			pluginsOnProcess(timers, options, getDbLayer(),dateFrom,dateTo);
+			
+			getDbLayer().getConnection().beginTransaction();
+			getDbLayer().setLastNotificationDate(schedulerVariable,dateTo);
+			getDbLayer().getConnection().commit();
 		}
 
-		this.getDbLayer().setLastNotificationDate(dateTo);
-		this.getDbLayer().commit();
-
-		logger.info(String
-				.format("%s: total %s: inserted = %s, updated = %s, skipped = %s, inserted timers = %s",
-						functionName,
-						this.countTotal,
-						this.countInsert,
-						this.countUpdate,
-						this.countSkip,
-						this.countInsertTimer));
-		
-		this.pluginsOnProcess(this.timers, this.options, this.getDbLayer(),
-				dateFrom, dateTo);
 	}
 
 	/**
@@ -546,12 +573,13 @@ public class CheckHistoryModel extends NotificationModel {
 	 * @param dbItem
 	 * @throws Exception
 	 */
-	private void insertTimer(DBItemSchedulerMonNotifications dbItem) throws Exception{
+	private SOSHibernateBatchProcessor insertTimer(SOSHibernateBatchProcessor bp, DBItemSchedulerMonNotifications dbItem) throws Exception{
 		//Indent für die Ausgabe
-		String functionName = "  insertTimer";
+		String method = "  insertTimer";
 		//wir schreiben nur die erste notification (step 1)
 		
-		if(this.timers != null && dbItem.getStep().equals(new Long(1))){
+		//int count = 0;
+		if(timers != null && dbItem.getStep().equals(new Long(1))){
 			Set<Map.Entry<String, ElementTimer>> set = this.timers.entrySet();
 			for (Map.Entry<String, ElementTimer> me : set) {
 				String timerName = me.getKey();
@@ -578,10 +606,10 @@ public class CheckHistoryModel extends NotificationModel {
 						}	
 					}
 					if(insert){
-						this.countInsertTimer++;
+						counter.addInsertTimer();
 						logger.debug(String
 									.format("%s: insert check. name = %s, notification.id = %s (scheduler = %s, jobChain = %s, step = %s, step state = %s), stepFrom = %s, stepTo = %s ",
-										functionName, timerName,
+										method, timerName,
 										dbItem.getId(),
 										dbItem.getSchedulerId(),
 										dbItem.getJobChainName(),
@@ -590,18 +618,19 @@ public class CheckHistoryModel extends NotificationModel {
 										jobChain.getStepFrom(),
 										jobChain.getStepTo()));
 
-						DBItemSchedulerMonChecks item = this.getDbLayer()
-									.createCheck(timerName, dbItem.getId(),
+						DBItemSchedulerMonChecks item = getDbLayer()
+									.createCheck(timerName, dbItem,
 											jobChain.getStepFrom(),
 											jobChain.getStepTo(),
 											dbItem.getOrderStartTime(),
 											dbItem.getOrderEndTime());
 
-						this.getDbLayer().save(item);
+						bp.addBatch(item);
 					}
 				}
 			}
 		}
+		return bp;
 	}
 	
 	/**
@@ -613,7 +642,7 @@ public class CheckHistoryModel extends NotificationModel {
 	private void pluginsOnInit(LinkedHashMap<String, ElementTimer> timers,
 			CheckHistoryJobOptions options, DBLayerSchedulerMon dbLayer) {
 
-		for (ICheckHistoryPlugin plugin : this.plugins) {
+		for (ICheckHistoryPlugin plugin : plugins) {
 			try {
 				plugin.onInit(timers, options, dbLayer);
 			} catch (Exception ex) {
@@ -631,7 +660,7 @@ public class CheckHistoryModel extends NotificationModel {
 	private void pluginsOnExit(LinkedHashMap<String, ElementTimer> timers,
 			CheckHistoryJobOptions options, DBLayerSchedulerMon dbLayer) {
 
-		for (ICheckHistoryPlugin plugin : this.plugins) {
+		for (ICheckHistoryPlugin plugin : plugins) {
 			try {
 				plugin.onExit(timers, options, dbLayer);
 			} catch (Exception ex) {
@@ -652,7 +681,7 @@ public class CheckHistoryModel extends NotificationModel {
 			CheckHistoryJobOptions options, DBLayerSchedulerMon dbLayer,
 			Date dateFrom, Date dateTo) {
 
-		for (ICheckHistoryPlugin plugin : this.plugins) {
+		for (ICheckHistoryPlugin plugin : plugins) {
 			try {
 				plugin.onProcess(timers, options, dbLayer, dateFrom, dateTo);
 			} catch (Exception ex) {
@@ -687,7 +716,7 @@ public class CheckHistoryModel extends NotificationModel {
 			}
 		}
 		logger.debug(String.format("plugins registered = %s",
-				this.plugins.size()));
+				plugins.size()));
 
 	}
 

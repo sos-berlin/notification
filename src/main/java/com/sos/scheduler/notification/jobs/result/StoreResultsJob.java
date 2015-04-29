@@ -1,40 +1,24 @@
-
-
 package com.sos.scheduler.notification.jobs.result;
 
 import org.apache.log4j.Logger;
 
 import com.sos.JSHelper.Basics.JSJobUtilitiesClass;
-import com.sos.scheduler.notification.helper.DBConnector;
+import com.sos.hibernate.classes.SOSHibernateConnection;
+import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.model.result.StoreResultsModel;
 
 /**
- * \class 		StoreResultsJob - Workerclass for "StoreResultsJob"
+ * 
+ * @author Robert Ehrlich
  *
- * \brief AdapterClass of StoreResultsJob for the SOSJobScheduler
- *
- * This Class StoreResultsJob is the worker-class.
- *
-
- *
- * see \see C:\Users\Robert Ehrlich\AppData\Local\Temp\scheduler_editor-1003156690106171278.html for (more) details.
- *
- * \verbatim ;
- * mechanicaly created by D:\Arbeit\scheduler\jobscheduler_data\re-dell_4444\config\JOETemplates\java\xsl\JSJobDoc2JSWorkerClass.xsl from http://www.sos-berlin.com at 20140508144459 
- * \endverbatim
  */
 public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions> {
-	private final String					conClassName						= "StoreResultsJob";  //$NON-NLS-1$
-	private static Logger		logger			= Logger.getLogger(StoreResultsJob.class);
+	private final String	conClassName	= StoreResultsJob.class.getSimpleName();
+	private static Logger	logger			= Logger.getLogger(StoreResultsJob.class);
+	private SOSHibernateConnection connection; 
 	
-	private DBConnector db;
-
 	/**
 	 * 
-	 * \brief StoreResultsJob
-	 *
-	 * \details
-	 *
 	 */
 	public StoreResultsJob() {
 		super(new StoreResultsJobOptions());
@@ -45,58 +29,44 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 	 * @throws Exception
 	 */
 	public void init() throws Exception {
-		this.db = new DBConnector();
-		this.db.connect(Options().scheduler_notification_hibernate_configuration_file.Value(),this.Options().force_reconnect.value());
+		final String conMethodName = conClassName + "::init"; //$NON-NLS-1$
+		
+		logger.debug(conMethodName);
+		
+		try{
+			connection = new SOSHibernateConnection(Options().scheduler_notification_hibernate_configuration_file.Value());
+			connection.setAutoCommit(Options().scheduler_notification_connection_autocommit.value());
+			connection.setIgnoreAutoCommitTransactions(true);
+			connection.setTransactionIsolation(Options().scheduler_notification_connection_transaction_isolation.value());
+			connection.setUseOpenStatelessSession(true);
+			connection.addClassMapping(DBLayer.getSchedulerClassMapping());
+			connection.addClassMapping(DBLayer.getNotificationClassMapping());
+			connection.connect();
+		}
+		catch(Exception ex){
+			throw new Exception(String.format("reporting connection: %s",
+					ex.toString()));
+		}
 	}
 
 	/**
 	 * 
 	 */
 	public void exit(){
-		final String conMethodName = conClassName + "::exit";  //$NON-NLS-1$
+		final String conMethodName = conClassName + "::exit"; //$NON-NLS-1$
+		
+		logger.debug(conMethodName);
 		try {
-			this.db.disconnect();
+			connection.disconnect();
 		} catch (Exception e) {
-			logger.warn(String.format("%s:%s",conMethodName,e.getMessage()));
+			logger.warn(String.format("%s:%s", conMethodName, e.toString()));
 		}
 	}
-
+	
 	/**
 	 * 
-	 * \brief Options - returns the StoreResultsJobOptionClass
-	 * 
-	 * \details
-	 * The StoreResultsJobOptionClass is used as a Container for all Options (Settings) which are
-	 * needed.
-	 *  
-	 * \return StoreResultsJobOptions
-	 *
-	 */
-	public StoreResultsJobOptions Options() {
-
-		@SuppressWarnings("unused")  //$NON-NLS-1$
-		final String conMethodName = conClassName + "::Options";  //$NON-NLS-1$
-
-		if (objOptions == null) {
-			objOptions = new StoreResultsJobOptions();
-		}
-		return objOptions;
-	}
-
-	/**
-	 * 
-	 * \brief Execute - Start the Execution of StoreResultsJob
-	 * 
-	 * \details
-	 * 
-	 * For more details see
-	 * 
-	 * \see JobSchedulerAdapterClass 
-	 * \see StoreResultsJobMain
-	 * 
-	 * \return StoreResultsJob
-	 *
 	 * @return
+	 * @throws Exception
 	 */
 	public StoreResultsJob Execute() throws Exception {
 		final String conMethodName = conClassName + "::Execute";  //$NON-NLS-1$
@@ -106,11 +76,8 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 			Options().CheckMandatory();
 			logger.debug(Options().toString());
 			
-			
-			StoreResultsModel model = new StoreResultsModel();
-			model.init(Options(),this.db.getDbLayer());
+			StoreResultsModel model = new StoreResultsModel(connection,Options());
 			model.process();
-			model.exit();
 		}	
 		catch (Exception e) {
 			e.printStackTrace(System.err);
@@ -121,6 +88,20 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 			//logger.debug(String.format(Messages.getMsg("JSJ-I-111"), conMethodName ) );
 		}
 		return this;
+	}
+	
+	/**
+	 * 
+	 */
+	public StoreResultsJobOptions Options() {
+
+		@SuppressWarnings("unused")  //$NON-NLS-1$
+		final String conMethodName = conClassName + "::Options";  //$NON-NLS-1$
+
+		if (objOptions == null) {
+			objOptions = new StoreResultsJobOptions();
+		}
+		return objOptions;
 	}
 
 }  // class StoreResultsJob

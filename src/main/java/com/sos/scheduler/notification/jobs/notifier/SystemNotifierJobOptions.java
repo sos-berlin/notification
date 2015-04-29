@@ -1,77 +1,145 @@
-
-
 package com.sos.scheduler.notification.jobs.notifier;
 
-import java.util.HashMap;
-
-import com.sos.JSHelper.Annotations.JSOptionClass;
-
-import com.sos.JSHelper.Exceptions.JSExceptionMandatoryOptionMissing;
-import com.sos.JSHelper.Listener.JSListener;
 import org.apache.log4j.Logger;
 
-/**
- * \class 		SystemNotifierJobOptions - SystemNotifierJob
- *
- * \brief
- * An Options as a container for the Options super class.
- * The Option class will hold all the things, which would be otherwise overwritten at a re-creation
- * of the super-class.
- *
- *
+import com.sos.JSHelper.Annotations.JSOptionClass;
+import com.sos.JSHelper.Annotations.JSOptionDefinition;
+import com.sos.JSHelper.Options.SOSOptionString;
+import com.sos.scheduler.notification.jobs.NotificationJobOptionsSuperClass;
 
- *
- * see \see C:\Users\Robert Ehrlich\AppData\Local\Temp\scheduler_editor-3613842323690924441.html for (more) details.
- *
- * \verbatim ;
- * mechanicaly created by JobDocu2OptionsClass.xslt from http://www.sos-berlin.com at 20140513161021
- * \endverbatim
+/**
+ * 
+ * @author Robert Ehrlich
+ * 
  */
-@JSOptionClass(name = "SystemNotifierJobOptions", description = "SystemNotifierJob")
-public class SystemNotifierJobOptions extends SystemNotifierJobOptionsSuperClass {
+@JSOptionClass(name = "SystemNotifierJobOptions", description = "SystemNotifierJobOptions")
+public class SystemNotifierJobOptions extends NotificationJobOptionsSuperClass {
+	private static final long serialVersionUID = 1L;
+	private final String conClassName = SystemNotifierJobOptions.class
+			.getSimpleName();
+	@SuppressWarnings("unused")
+	private static Logger logger = Logger.getLogger(SystemNotifierJobOptions.class);
+
 	/**
+	 * \var schema_configuration_file :
+	 * 
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	@SuppressWarnings("unused")
-	private final String					conClassName						= "SystemNotifierJobOptions";
-	@SuppressWarnings("unused")
-	private static Logger		logger			= Logger.getLogger(SystemNotifierJobOptions.class);
+	@JSOptionDefinition(name = "schema_configuration_file", description = "", key = "schema_configuration_file", type = "SOSOptionString", mandatory = true)
+	public SOSOptionString schema_configuration_file = new SOSOptionString(
+			this, conClassName + ".schema_configuration_file", // HashMap-Key
+			"", // Titel
+			" ", // InitValue
+			"", // DefaultValue
+			true // isMandatory
+	);
 
-    /**
-    * constructors
-    */
+	/**
+	 * \brief getschema_configuration_file :
+	 * 
+	 * \details
+	 * 
+	 * 
+	 * \return
+	 * 
+	 */
+	public SOSOptionString getschema_configuration_file() {
+		return schema_configuration_file;
+	}
 
-	public SystemNotifierJobOptions() {
-	} // public SystemNotifierJobOptions
+	/**
+	 * \brief setschema_configuration_file :
+	 * 
+	 * \details
+	 * 
+	 * 
+	 * @param schema_configuration_file
+	 *            :
+	 */
+	public void setschema_configuration_file(
+			SOSOptionString p_schema_configuration_file) {
+		this.schema_configuration_file = p_schema_configuration_file;
+	}
 
-	public SystemNotifierJobOptions(JSListener pobjListener) {
-		this();
-		this.registerMessageListener(pobjListener);
-	} // public SystemNotifierJobOptions
+	/**
+	 * \var system_configuration_file :
+	 * 
+	 * 
+	 */
+	@JSOptionDefinition(name = "system_configuration_file", description = "", key = "system_configuration_file", type = "SOSOptionString", mandatory = true)
+	public SOSOptionString system_configuration_file = new SOSOptionString(
+			this, conClassName + ".system_configuration_file", // HashMap-Key
+			"", // Titel
+			" ", // InitValue
+			"", // DefaultValue
+			true // isMandatory
+	);
 
-		//
+	/**
+	 * \brief getsystem_configuration_file :
+	 * 
+	 * \details
+	 * 
+	 * 
+	 * \return
+	 * 
+	 */
+	public SOSOptionString getsystem_configuration_file() {
+		return system_configuration_file;
+	}
 
-	public SystemNotifierJobOptions (HashMap <String, String> JSSettings) throws Exception {
-		super(JSSettings);
-	} // public SystemNotifierJobOptions (HashMap JSSettings)
-/**
- * \brief CheckMandatory - prüft alle Muss-Optionen auf Werte
- *
- * \details
- * @throws Exception
- *
- * @throws Exception
- * - wird ausgelöst, wenn eine mandatory-Option keinen Wert hat
- */
-		@Override  // SystemNotifierJobOptionsSuperClass
-	public void CheckMandatory() {
-		try {
-			super.CheckMandatory();
-		}
-		catch (Exception e) {
-			throw new JSExceptionMandatoryOptionMissing(e.toString());
-		}
-	} // public void CheckMandatory ()
+	/**
+	 * \brief setsystem_configuration_file :
+	 * 
+	 * \details
+	 * 
+	 * 
+	 * @param system_configuration_file
+	 *            :
+	 */
+	public void setsystem_configuration_file(
+			SOSOptionString p_system_configuration_file) {
+		this.system_configuration_file = p_system_configuration_file;
+	}
+
+	/**
+	 * \var plugin_job_name :
+	 * 
+	 * 
+	 */
+	@JSOptionDefinition(name = "plugin_job_name", description = "", key = "plugin_job_name", type = "SOSOptionString", mandatory = false)
+	public SOSOptionString plugin_job_name = new SOSOptionString(this,
+			conClassName + ".plugin_job_name", // HashMap-Key
+			"", // Titel
+			"", // InitValue
+			"", // DefaultValue
+			false // isMandatory
+	);
+
+	/**
+	 * \brief getplugin_job_name :
+	 * 
+	 * \details
+	 * 
+	 * 
+	 * \return
+	 * 
+	 */
+	public SOSOptionString getplugin_job_name() {
+		return plugin_job_name;
+	}
+
+	/**
+	 * \brief setplugin_job_name :
+	 * 
+	 * \details
+	 * 
+	 * 
+	 * @param p_plugin_job_name
+	 *            :
+	 */
+	public void setplugin_job_name(SOSOptionString p_plugin_job_name) {
+		this.plugin_job_name = p_plugin_job_name;
+	}
+
 }
-

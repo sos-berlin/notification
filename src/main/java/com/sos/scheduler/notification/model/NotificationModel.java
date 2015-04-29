@@ -1,10 +1,19 @@
 package com.sos.scheduler.notification.model;
 
 import java.io.File;
+import java.util.Locale;
 
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
+import org.joda.time.format.PeriodFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sos.util.SOSString;
+
+import com.sos.hibernate.classes.SOSHibernateConnection;
 import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
 import com.sos.scheduler.notification.helper.RegExFilenameFilter;
 
@@ -13,7 +22,7 @@ import com.sos.scheduler.notification.helper.RegExFilenameFilter;
  * @author Robert Ehrlich
  *
  */
-public class NotificationModel implements INotificationModel {
+public class NotificationModel{
 
 	final Logger logger = LoggerFactory.getLogger(NotificationModel.class);
 	DBLayerSchedulerMon dbLayer = null;
@@ -21,34 +30,19 @@ public class NotificationModel implements INotificationModel {
 	public static final String OPERATION_ACKNOWLEDGE = "acknowledge";
 	public static final String OPERATION_RESET_SERVICES = "reset_services";
 	
-	
-	@Override
-	public void init(DBLayerSchedulerMon db) throws Exception {
-		this.dbLayer = db;
-		if(this.dbLayer == null){
-			throw new Exception("dbLayer is NULL");
+	public NotificationModel(SOSHibernateConnection conn) throws Exception {
+		if(conn == null){
+			throw new Exception("connection is NULL");
 		}
-
-	}
-
-	
-	/**
-	 * 
-	 */
-	@Override
-	public void process() throws Exception {
+		dbLayer = new DBLayerSchedulerMon(conn);
 	}
 
 	/**
 	 * 
+	 * @return
 	 */
-	@Override
-	public void exit() throws Exception {
-		logger.debug(String.format("exit"));
-	}
-
 	public DBLayerSchedulerMon getDbLayer() {
-		return this.dbLayer;
+		return dbLayer;
 	}
 
 	/**
@@ -108,6 +102,69 @@ public class NotificationModel implements INotificationModel {
 			return result[0];
 		}
 		return null;
+	}
+	
+	/**
+	 * 
+	 * @param startTime
+	 * @param endTime
+	 * @return
+	 */
+	public static String getDuration(DateTime startTime,DateTime endTime){
+		Duration duration = new Duration(startTime, endTime);
+		Period period = duration.toPeriod().normalizedStandard(PeriodType.time());
+		return PeriodFormat.wordBased(Locale.ENGLISH).print(period);
+	}
+	
+	
+	
+	/**
+	 * 
+	 * @param age
+	 * @return
+	 * @throws Exception
+	 */
+	public static int resolveAge2Minutes(String age) throws Exception{
+		if(SOSString.isEmpty(age)){
+			throw new Exception("age is empty");
+		}
+		
+		int minutes = 0;
+		String[] arr = age.trim().split(" ");
+		for(String s : arr){
+			s = s.trim().toLowerCase();
+			if(!SOSString.isEmpty(s)){
+				String sub = s;
+				try{
+					if(s.endsWith("w")){
+						sub = s.substring(0,s.length()-1);
+						minutes+= 60*24*7*Integer.parseInt(sub);
+					}
+					else if(s.endsWith("d")){
+						sub = s.substring(0,s.length()-1);
+						minutes+= 60*24*Integer.parseInt(sub);
+					}
+					else if(s.endsWith("h")){
+						sub = s.substring(0,s.length()-1);
+						minutes+= 60*Integer.parseInt(sub);
+					}
+					else if(s.endsWith("m")){
+						sub = s.substring(0,s.length()-1);
+						minutes+= Integer.parseInt(sub);
+					}
+					else{
+						minutes+= Integer.parseInt(sub);
+					}
+				}	
+				catch(Exception ex){
+					throw new Exception(String.format("invalid integer value = %s (%s) : %s",
+							sub,
+							s,
+							ex.toString()));
+				}
+			}
+		}
+		return minutes;
 	}
 	
 }
