@@ -1,6 +1,5 @@
 package com.sos.scheduler.notification.model;
 
-import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
 
 /**
  * 
@@ -8,11 +7,6 @@ import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
  *
  */
 public interface INotificationModel {
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	public void init(DBLayerSchedulerMon dbLayer) throws Exception;
 	
 	/**
 	 * 
@@ -20,15 +14,5 @@ public interface INotificationModel {
 	 */
 	public void process() throws Exception;
 	
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	public void exit() throws Exception;
-	
-	/**
-	 * 
-	 * @return
-	 */
 	
 }

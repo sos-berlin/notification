@@ -1,5 +1,5 @@
 package com.sos.scheduler.notification.plugins.notifier;
-
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sos.spooler.Job;
@@ -11,11 +11,11 @@ import com.sos.scheduler.notification.db.DBItemSchedulerMonChecks;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonNotifications;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonSystemNotifications;
 import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
-import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
-import com.sos.scheduler.notification.helper.ElementNotificationMonitor;
 import com.sos.scheduler.notification.helper.EServiceMessagePrefix;
 import com.sos.scheduler.notification.helper.EServiceStatus;
+import com.sos.scheduler.notification.helper.ElementNotificationMonitor;
 import com.sos.scheduler.notification.helper.ElementNotificationMonitorCommand;
+import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
 
 /**
  * 
@@ -23,11 +23,8 @@ import com.sos.scheduler.notification.helper.ElementNotificationMonitorCommand;
  *
  */
 public class SystemNotifierJobPlugin extends SystemNotifierPlugin {
-
-
-	final org.slf4j.Logger logger = LoggerFactory
-			.getLogger(SystemNotifierJobPlugin.class);
-	
+	final Logger logger = LoggerFactory.getLogger(SystemNotifierJobPlugin.class);
+		
 
 	/**
 	 * 
@@ -36,13 +33,13 @@ public class SystemNotifierJobPlugin extends SystemNotifierPlugin {
 	public void init(ElementNotificationMonitor monitor) throws Exception{
 		super.init(monitor);
 		
-		ElementNotificationMonitorCommand configuredCommand = this.getNotificationMonitor().getMonitorCommand();
+		ElementNotificationMonitorCommand configuredCommand = getNotificationMonitor().getMonitorCommand();
 		if(configuredCommand == null){
 			throw new Exception(String.format("%s: Command element is missing (not configured)"
-					,this.getClass().getSimpleName()));
+					,getClass().getSimpleName()));
 	
 		}
-		this.setCommand(configuredCommand.getCommand());
+		setCommand(configuredCommand.getCommand());
 	}
 	
 	/**
@@ -58,17 +55,17 @@ public class SystemNotifierJobPlugin extends SystemNotifierPlugin {
 			EServiceMessagePrefix prefix)
 			throws Exception {
 
-		String serviceStatus = this.getServiceStatusValue(status);
-		String servicePrefix = this.getServiceMessagePrefixValue(prefix);
+		String serviceStatus = getServiceStatusValue(status);
+		String servicePrefix = getServiceMessagePrefixValue(prefix);
 				
-		this.resolveCommandAllTableFieldVars(dbLayer, notification,systemNotification,check);
-		this.resolveCommandServiceNameVar(systemNotification.getServiceName());
-		this.resolveCommandServiceStatusVar(serviceStatus);
-		this.resolveCommandServiceMessagePrefixVar(servicePrefix);
-		this.resolveCommandAllEnvVars();
+		resolveCommandAllTableFieldVars(dbLayer, notification,systemNotification,check);
+		resolveCommandServiceNameVar(systemNotification.getServiceName());
+		resolveCommandServiceStatusVar(serviceStatus);
+		resolveCommandServiceMessagePrefixVar(servicePrefix);
+		resolveCommandAllEnvVars();
 		
 		Variable_set parameters = spooler.create_variable_set();
-		parameters.set_var("command", this.getCommand());
+		parameters.set_var("command", getCommand());
 
 		logger.info(String.format("call job = %s with command = %s", 
 				options.plugin_job_name.Value(),
@@ -82,18 +79,7 @@ public class SystemNotifierJobPlugin extends SystemNotifierPlugin {
 		Task t = j.start(parameters);
 		
 		//an der Stelle noch nicht gesetzt
-		int exitCode =  t.exit_code();
-		
-		/**
-		logger.info(String.format("sderr code job = %s",t.stderr_text()));
-		
-		sos.spooler.Error e = t.error();
-		if(e != null && e.is_error()){
-			throw new Exception(e.code());
-		}
-		*/
-		
-		return exitCode;
+		return t.exit_code();
 	}
 
 	

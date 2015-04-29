@@ -1,5 +1,3 @@
-
-
 package com.sos.scheduler.notification.jobs.notifier;
 
 import org.apache.log4j.Logger;
@@ -7,30 +5,20 @@ import org.apache.log4j.Logger;
 import sos.spooler.Spooler;
 
 import com.sos.JSHelper.Basics.JSJobUtilitiesClass;
-import com.sos.scheduler.notification.helper.DBConnector;
+import com.sos.hibernate.classes.SOSHibernateConnection;
+import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.model.notifier.SystemNotifierModel;
 
 /**
- * \class 		SystemNotifierJob - Workerclass for "SystemNotifierJob"
+ * 
+ * @author Robert Ehrlich
  *
- * \brief AdapterClass of SystemNotifierJob for the SOSJobScheduler
- *
- * This Class SystemNotifierJob is the worker-class.
- *
-
- *
- * see \see C:\Users\Robert Ehrlich\AppData\Local\Temp\scheduler_editor-3613842323690924441.html for (more) details.
- *
- * \verbatim ;
- * mechanicaly created by D:\Arbeit\scheduler\jobscheduler_data\re-dell_4444\config\JOETemplates\java\xsl\JSJobDoc2JSWorkerClass.xsl from http://www.sos-berlin.com at 20140513161021 
- * \endverbatim
  */
 public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOptions> {
-	private final String					conClassName						= "SystemNotifierJob";  //$NON-NLS-1$
-	private static Logger		logger			= Logger.getLogger(SystemNotifierJob.class);
-	
+	private final String	conClassName	= SystemNotifierJob.class.getSimpleName();
+	private static Logger	logger			= Logger.getLogger(SystemNotifierJob.class);
+	private SOSHibernateConnection connection; 
 	private Spooler spooler;
-	private DBConnector db;
     
 	/**
 	 * 
@@ -45,65 +33,48 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 
 	/**
 	 * 
-	 * @param spooler
 	 * @throws Exception
 	 */
-	public void init(Spooler spooler) throws Exception {
-		this.spooler = spooler;
-		this.db = new DBConnector();
-		this.db.connect(Options().hibernate_configuration_file.Value(),false);
-	
+	public void init(Spooler sp) throws Exception {
+		final String conMethodName = conClassName + "::init"; //$NON-NLS-1$
+		
+		logger.debug(conMethodName);
+		
+		try{
+			spooler = sp;
+			
+			connection = new SOSHibernateConnection(Options().hibernate_configuration_file.Value());
+			connection.setAutoCommit(Options().connection_autocommit.value());
+			connection.setIgnoreAutoCommitTransactions(true);
+			connection.setTransactionIsolation(Options().connection_transaction_isolation.value());
+			connection.setUseOpenStatelessSession(true);
+			connection.addClassMapping(DBLayer.getNotificationClassMapping());
+			connection.connect();
+		}
+		catch(Exception ex){
+			throw new Exception(String.format("reporting connection: %s",
+					ex.toString()));
+		}
 	}
 
 	/**
 	 * 
 	 */
 	public void exit(){
-		final String conMethodName = conClassName + "::exit";  //$NON-NLS-1$
+		final String conMethodName = conClassName + "::exit"; //$NON-NLS-1$
+		
+		logger.debug(conMethodName);
 		try {
-			this.db.disconnect();
+			connection.disconnect();
 		} catch (Exception e) {
-			logger.warn(String.format("%s:%s",conMethodName,e.getMessage()));
+			logger.warn(String.format("%s:%s", conMethodName, e.toString()));
 		}
 	}
 	
-	
 	/**
 	 * 
-	 * \brief Options - returns the SystemNotifierJobOptionClass
-	 * 
-	 * \details
-	 * The SystemNotifierJobOptionClass is used as a Container for all Options (Settings) which are
-	 * needed.
-	 *  
-	 * \return SystemNotifierJobOptions
-	 *
-	 */
-	public SystemNotifierJobOptions Options() {
-
-		@SuppressWarnings("unused")  //$NON-NLS-1$
-		final String conMethodName = conClassName + "::Options";  //$NON-NLS-1$
-
-		if (objOptions == null) {
-			objOptions = new SystemNotifierJobOptions();
-		}
-		return objOptions;
-	}
-
-	/**
-	 * 
-	 * \brief Execute - Start the Execution of SystemNotifierJob
-	 * 
-	 * \details
-	 * 
-	 * For more details see
-	 * 
-	 * \see JobSchedulerAdapterClass 
-	 * \see SystemNotifierJobMain
-	 * 
-	 * \return SystemNotifierJob
-	 *
 	 * @return
+	 * @throws Exception
 	 */
 	public SystemNotifierJob Execute() throws Exception {
 		final String conMethodName = conClassName + "::Execute";  //$NON-NLS-1$
@@ -114,10 +85,8 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 			Options().CheckMandatory();
 			logger.debug(Options().toString());
 			
-			SystemNotifierModel model = new SystemNotifierModel();
-			model.init(Options(), this.db.getDbLayer(),spooler);
+			SystemNotifierModel model = new SystemNotifierModel(connection,Options(),spooler);
 			model.process();
-			model.exit();
 		}
 		catch (Exception e) {
 			e.printStackTrace(System.err);
@@ -129,4 +98,17 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 		return this;
 	}
 
+	/**
+	 * 
+	 */
+	public SystemNotifierJobOptions Options() {
+
+		@SuppressWarnings("unused")  //$NON-NLS-1$
+		final String conMethodName = conClassName + "::Options";  //$NON-NLS-1$
+
+		if (objOptions == null) {
+			objOptions = new SystemNotifierJobOptions();
+		}
+		return objOptions;
+	}
 }  // class SystemNotifierJob

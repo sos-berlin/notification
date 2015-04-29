@@ -1,39 +1,23 @@
-
-
 package com.sos.scheduler.notification.jobs.result;
 
 import java.io.File;
-import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 
 import sos.scheduler.job.JobSchedulerJobAdapter;  // Super-Class for JobScheduler Java-API-Jobs
-import sos.spooler.Job_chain_node;
 import sos.spooler.Order;
-import sos.spooler.Supervisor_client;
 import sos.spooler.Variable_set;
 import sos.util.SOSString;
 /**
- * \class 		StoreResultsJobJSAdapterClass - JobScheduler Adapter for "NotificationMonitor"
+ * 
+ * @author Robert Ehrlich
  *
- * \brief AdapterClass of NotificationMonitor for the SOSJobScheduler
- *
- * This Class StoreResultsJobJSAdapterClass works as an adapter-class between the SOS
- * JobScheduler and the worker-class NotificationMonitor.
- *
-
- *
- * see \see C:\Users\Robert Ehrlich\AppData\Local\Temp\scheduler_editor-1003156690106171278.html for more details.
- *
- * \verbatim ;
- * mechanicaly created by D:\Arbeit\scheduler\jobscheduler_data\re-dell_4444\config\JOETemplates\java\xsl\JSJobDoc2JSAdapterClass.xsl from http://www.sos-berlin.com at 20140508144459
- * \endverbatim
  */
 public class StoreResultsJobJSAdapterClass extends JobSchedulerJobAdapter  {
 	private static Logger		logger			= Logger.getLogger(StoreResultsJobJSAdapterClass.class);
 
-	StoreResultsJob objR = null;
-	StoreResultsJobOptions objO = null;
+	StoreResultsJob job = null;
+	StoreResultsJobOptions options = null;
 	
 	/**
 	 * wird im procces_after aufgerufen
@@ -42,20 +26,21 @@ public class StoreResultsJobJSAdapterClass extends JobSchedulerJobAdapter  {
 	 */
 	public void init() throws Exception {
 		
-		this.objR = new StoreResultsJob();
-		this.objO = objR.Options();
-		this.objO.CurrentNodeName(this.getCurrentNodeName());
-		this.objO.setAllOptions(getSchedulerParameterAsProperties(getJobOrOrderParameters()));
-	    this.objR.setJSJobUtilites(this);
+		job = new StoreResultsJob();
+		options = job.Options();
+		options.CurrentNodeName(this.getCurrentNodeName());
+		options.setAllOptions(getSchedulerParameterAsProperties(getJobOrOrderParameters()));
+	    job.setJSJobUtilites(this);
 		
-	    if(SOSString.isEmpty(objO.scheduler_notification_hibernate_configuration_file.Value())){
+	    if(SOSString.isEmpty(options.scheduler_notification_hibernate_configuration_file.Value())){
 	    	File f = new File(new File(spooler.configuration_directory()).getParent(), "hibernate.cfg.xml");
-	    	objO.scheduler_notification_hibernate_configuration_file.Value(f.getAbsolutePath());
+	    	options.scheduler_notification_hibernate_configuration_file.Value(f.getAbsolutePath());
 	    }
-	    
-        this.objR.init();
+	    job.init();
 	}
 
+	/**
+	 * ohne getSpecialParameters hat in den Versionen vor 1.9 Fehler produziert
 	@Override
 	public HashMap<String, String> getSpecialParameters() {
 
@@ -103,7 +88,7 @@ public class StoreResultsJobJSAdapterClass extends JobSchedulerJobAdapter  {
 		}
 
 		return specialParams;
-	}
+	}*/
 	
 	
 	/**
@@ -111,8 +96,8 @@ public class StoreResultsJobJSAdapterClass extends JobSchedulerJobAdapter  {
 	 * @throws Exception
 	 */
 	public void exit() throws Exception {
-		if(this.objR != null){
-			this.objR.exit();
+		if(job != null){
+			job.exit();
 		}
 	}
 	
@@ -135,35 +120,35 @@ public class StoreResultsJobJSAdapterClass extends JobSchedulerJobAdapter  {
 		Variable_set params = this.getParameters();
 		
 		if (params != null && params.count() > 0) {
-			this.init();
+			init();
 			
-			this.objO.mon_results_scheduler_id.Value(spooler.id());
-			this.objO.mon_results_task_id.value(spooler_task.id());
+			options.mon_results_scheduler_id.Value(spooler.id());
+			options.mon_results_task_id.value(spooler_task.id());
 			
 			if(order != null && order.job_chain_node() != null){
-				this.objO.mon_results_order_step_state.Value(order.job_chain_node().state());
+				options.mon_results_order_step_state.Value(order.job_chain_node().state());
 			}
 			else{
 				logger.debug(String.format("set mon_results_order_step_state to NULL"));
 				
-				this.objO.mon_results_order_step_state.Value(null);
+				options.mon_results_order_step_state.Value(null);
 			}
 			
-			this.objO.mon_results_order_id.Value((order == null ? null : order
+			options.mon_results_order_id.Value((order == null ? null : order
 					.id()));
 			
-			this.objO.mon_results_standalone
+			options.mon_results_standalone
 					.value(order == null ? true : false);
 
 			
 			// in neuen job scheduler versionen
 			if(order != null && order.job_chain() != null){
-				this.objO.mon_results_job_chain_name.Value(order.job_chain().path());
+				options.mon_results_job_chain_name.Value(order.job_chain().path());
 					
 			}
 			else{
 				logger.debug(String.format("set mon_results_job_chain_name to NULL"));
-				this.objO.mon_results_job_chain_name.Value(null);
+				options.mon_results_job_chain_name.Value(null);
 			}
 			
 			
@@ -175,7 +160,7 @@ public class StoreResultsJobJSAdapterClass extends JobSchedulerJobAdapter  {
 			 * ()+"/"+order.job_chain().name()); }
 			 */
 
-			this.objR.Execute();
+			job.Execute();
 	
 			this.exit();
 		}

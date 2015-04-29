@@ -20,10 +20,10 @@ import org.hibernate.annotations.Type;
 import com.sos.hibernate.classes.DbItem;
 
 @Entity
-@Table(name = DBLayerSchedulerMon.TABLE_SCHEDULER_MON_SYSNOTIFICATIONS)
+@Table(name = DBLayer.TABLE_SCHEDULER_MON_SYSNOTIFICATIONS)
 @SequenceGenerator(
-		name=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_SYSNOTIFICATIONS, 
-		sequenceName=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_SYSNOTIFICATIONS,
+		name=DBLayer.SEQUENCE_SCHEDULER_MON_SYSNOTIFICATIONS, 
+		sequenceName=DBLayer.SEQUENCE_SCHEDULER_MON_SYSNOTIFICATIONS,
 		allocationSize=1)
 /** uniqueConstraints = { @UniqueConstraint(columnNames = {"`NOTIFICATION_ID`", "`SYSTEM_ID`"})} */
 public class DBItemSchedulerMonSystemNotifications extends DbItem implements
@@ -75,7 +75,7 @@ public class DBItemSchedulerMonSystemNotifications extends DbItem implements
     @Id
     @GeneratedValue(
         	strategy=GenerationType.AUTO,
-        	generator=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_SYSNOTIFICATIONS)
+        	generator=DBLayer.SEQUENCE_SCHEDULER_MON_SYSNOTIFICATIONS)
     @Column(name="`ID`", nullable = false)
     public Long getId() {
         return this.id;
@@ -84,7 +84,7 @@ public class DBItemSchedulerMonSystemNotifications extends DbItem implements
     @Id
     @GeneratedValue(
         	strategy=GenerationType.AUTO,
-        	generator=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_SYSNOTIFICATIONS)
+        	generator=DBLayer.SEQUENCE_SCHEDULER_MON_SYSNOTIFICATIONS)
     @Column(name="`ID`", nullable = false)
     public void setId(Long val) {
        this.id = val;

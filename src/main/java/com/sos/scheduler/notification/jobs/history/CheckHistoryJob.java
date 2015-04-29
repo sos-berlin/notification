@@ -1,32 +1,22 @@
-
-
 package com.sos.scheduler.notification.jobs.history;
 
 import org.apache.log4j.Logger;
 
 import com.sos.JSHelper.Basics.JSJobUtilitiesClass;
-import com.sos.scheduler.notification.helper.DBConnector;
+import com.sos.hibernate.classes.SOSHibernateConnection;
+import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.model.history.CheckHistoryModel;
 
 /**
- * \class 		CheckHistoryJob - Workerclass for "CheckHistory"
+ * 
+ * @author Robert Ehrlich
  *
- * \brief AdapterClass of CheckHistoryJob for the SOSJobScheduler
- *
- * This Class CheckHistoryJob is the worker-class.
- *
-
- *
- * see \see C:\Users\Robert Ehrlich\AppData\Local\Temp\scheduler_editor-7198855759937042280.html for (more) details.
- *
- * \verbatim ;
- * mechanicaly created by D:\Arbeit\scheduler\jobscheduler_data\re-dell_4444\config\JOETemplates\java\xsl\JSJobDoc2JSWorkerClass.xsl from http://www.sos-berlin.com at 20140512133635 
- * \endverbatim
  */
 public class CheckHistoryJob extends JSJobUtilitiesClass<CheckHistoryJobOptions> {
-	private final String					conClassName						= "CheckHistoryJob";  //$NON-NLS-1$
-	private static Logger		logger			= Logger.getLogger(CheckHistoryJob.class);
-	private DBConnector db;
+	private final String	conClassName	= CheckHistoryJob.class.getSimpleName();
+	private static Logger	logger			= Logger.getLogger(CheckHistoryJob.class);
+	private SOSHibernateConnection connection; 
+	
 	/**
 	 * 
 	 * \brief CheckHistoryJob
@@ -38,31 +28,74 @@ public class CheckHistoryJob extends JSJobUtilitiesClass<CheckHistoryJobOptions>
 		super(new CheckHistoryJobOptions());
 	}
 
-	public void init() throws Exception {
-		this.db = new DBConnector();
-		this.db.connect(Options().hibernate_configuration_file.Value(), false);
-	}
-
-	
-	public void exit(){
-		final String conMethodName = conClassName + "::exit";  //$NON-NLS-1$
-		try {
-			this.db.disconnect();
-		} catch (Exception e) {
-			logger.warn(String.format("%s:%s",conMethodName,e.getMessage()));
-		}
-	}
-		
 	/**
 	 * 
-	 * \brief Options - returns the CheckHistoryJobOptionClass
+	 * @throws Exception
+	 */
+	public void init() throws Exception {
+		final String conMethodName = conClassName + "::init"; //$NON-NLS-1$
+		
+		logger.debug(conMethodName);
+		
+		try{
+			connection = new SOSHibernateConnection(Options().hibernate_configuration_file.Value());
+			connection.setAutoCommit(Options().connection_autocommit.value());
+			connection.setIgnoreAutoCommitTransactions(true);
+			connection.setTransactionIsolation(Options().connection_transaction_isolation.value());
+			connection.setUseOpenStatelessSession(true);
+			connection.addClassMapping(DBLayer.getSchedulerClassMapping());
+			connection.addClassMapping(DBLayer.getNotificationClassMapping());
+			connection.connect();
+		}
+		catch(Exception ex){
+			throw new Exception(String.format("reporting connection: %s",
+					ex.toString()));
+		}
+	}
+
+	/**
 	 * 
-	 * \details
-	 * The CheckHistoryJobOptionClass is used as a Container for all Options (Settings) which are
-	 * needed.
-	 *  
-	 * \return CheckHistoryJobOptions
-	 *
+	 */
+	public void exit(){
+		final String conMethodName = conClassName + "::exit"; //$NON-NLS-1$
+		
+		logger.debug(conMethodName);
+		try {
+			connection.disconnect();
+		} catch (Exception e) {
+			logger.warn(String.format("%s:%s", conMethodName, e.toString()));
+		}
+	}
+	
+
+	/**
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	public CheckHistoryJob Execute() throws Exception {
+		final String conMethodName = conClassName + "::Execute";  //$NON-NLS-1$
+
+		logger.debug(conMethodName);
+
+		try { 
+			Options().CheckMandatory();
+			logger.debug(Options().toString());
+			
+			CheckHistoryModel model = new CheckHistoryModel(connection,Options());
+			model.process();
+		}
+		catch (Exception e) {
+			e.printStackTrace(System.err);
+			logger.error(String.format("%s: %s",conMethodName,e.getMessage()));
+            throw e;			
+		}
+		
+		return this;
+	}
+	
+	/**
+	 * 
 	 */
 	public CheckHistoryJobOptions Options() {
 
@@ -75,42 +108,5 @@ public class CheckHistoryJob extends JSJobUtilitiesClass<CheckHistoryJobOptions>
 		return objOptions;
 	}
 
-	/**
-	 * 
-	 * \brief Execute - Start the Execution of CheckHistoryJob
-	 * 
-	 * \details
-	 * 
-	 * For more details see
-	 * 
-	 * \see JobSchedulerAdapterClass 
-	 * \see CheckHistoryJobMain
-	 * 
-	 * \return CheckHistoryJob
-	 *
-	 * @return
-	 */
-	public CheckHistoryJob Execute() throws Exception {
-		final String conMethodName = conClassName + "::Execute";  //$NON-NLS-1$
-
-		logger.debug(conMethodName);
-
-		try { 
-			Options().CheckMandatory();
-			logger.debug(Options().toString());
-			
-			CheckHistoryModel model = new CheckHistoryModel();
-			model.init(Options(),this.db.getDbLayer());
-			model.process();
-			model.exit();
-		}
-		catch (Exception e) {
-			e.printStackTrace(System.err);
-			logger.error(String.format("%s: %s",conMethodName,e.getMessage()));
-            throw e;			
-		}
-		
-		return this;
-	}
 
 }  // class CheckHistoryJob

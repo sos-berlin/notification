@@ -20,10 +20,10 @@ import sos.util.SOSString;
 import com.sos.hibernate.classes.DbItem;
 
 @Entity
-@Table(name = DBLayerSchedulerMon.TABLE_SCHEDULER_MON_CHECKS)
+@Table(name = DBLayer.TABLE_SCHEDULER_MON_CHECKS)
 @SequenceGenerator(
-		name=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_CHECKS, 
-		sequenceName=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_CHECKS,
+		name=DBLayer.SEQUENCE_SCHEDULER_MON_CHECKS, 
+		sequenceName=DBLayer.SEQUENCE_SCHEDULER_MON_CHECKS,
 		allocationSize=1)
 public class DBItemSchedulerMonChecks extends DbItem implements Serializable {
 	
@@ -61,7 +61,7 @@ public class DBItemSchedulerMonChecks extends DbItem implements Serializable {
     @Id
     @GeneratedValue(
         	strategy=GenerationType.AUTO,
-        	generator=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_CHECKS)
+        	generator=DBLayer.SEQUENCE_SCHEDULER_MON_CHECKS)
     @Column(name="`ID`", nullable = false)
     public Long getId() {
         return this.id;
@@ -70,7 +70,7 @@ public class DBItemSchedulerMonChecks extends DbItem implements Serializable {
     @Id
     @GeneratedValue(
         	strategy=GenerationType.AUTO,
-        	generator=DBLayerSchedulerMon.SEQUENCE_SCHEDULER_MON_CHECKS)
+        	generator=DBLayer.SEQUENCE_SCHEDULER_MON_CHECKS)
     @Column(name="`ID`", nullable = false)
     public void setId(Long val) {
        this.id = val;

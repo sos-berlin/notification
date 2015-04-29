@@ -2,40 +2,37 @@ package com.sos.scheduler.notification.model.cleanup;
 
 import java.util.Date;
 
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.sos.hibernate.classes.SOSHibernateConnection;
+import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
 import com.sos.scheduler.notification.jobs.cleanup.CleanupNotificationsJobOptions;
+import com.sos.scheduler.notification.model.INotificationModel;
 import com.sos.scheduler.notification.model.NotificationModel;
 
-public class CleanupNotificationsModel extends NotificationModel {
-	
+public class CleanupNotificationsModel extends NotificationModel implements INotificationModel {
 	final Logger logger = LoggerFactory.getLogger(CleanupNotificationsModel.class);
 	private CleanupNotificationsJobOptions options;
 	
 	/**
 	 * 
+	 * @param conn
+	 * @param opt
+	 * @throws Exception
 	 */
-	public CleanupNotificationsModel(){
+	public CleanupNotificationsModel(SOSHibernateConnection conn,
+			CleanupNotificationsJobOptions opt) throws Exception{
+		
+		super(conn);
+		if (opt == null) {
+			throw new Exception("CleanupNotificationsJobOptions is NULL");
+		}
+		options = opt;
     }
     
-    public void init(CleanupNotificationsJobOptions opt, DBLayerSchedulerMon db) throws Exception{
-    	super.init(db);
-    	this.options = opt;
-    }
-    
-    
-    
-    /**
-     * 
-     */
-    @Override
-    public void exit() throws Exception{
-    	logger.info(String.format("exit"));
-    	
-    	super.exit();
-   }
     
     
     /**
@@ -44,21 +41,28 @@ public class CleanupNotificationsModel extends NotificationModel {
      */
     @Override
     public void process() throws Exception{
-    	super.process();
-    	
+    	String method = "process";
     	try{
-    		int minutes = this.options.age.value();
+    		DateTime start = new DateTime();
+    		
+    		int minutes = NotificationModel.resolveAge2Minutes(this.options.age.Value());
     		Date date = DBLayerSchedulerMon.getCurrentDateTimeMinusMinutes(minutes);
     		
-    		logger.info(String.format("process: delete where created <= %s minutes ago (%s)",
-    				minutes,DBLayerSchedulerMon.getDateAsString(date)));
+    		logger.info(String.format("%s: age = %s, delete where created <= %s minutes ago (%s)",
+    				method,
+    				this.options.age.Value(),
+    				minutes,
+    				DBLayer.getDateAsString(date)));
         			
-    		this.getDbLayer().beginTransaction();
-    		this.getDbLayer().cleanupNotifications(date);
-    		this.getDbLayer().commit();
+    		getDbLayer().getConnection().beginTransaction();
+    		getDbLayer().cleanupNotifications(date);
+    		getDbLayer().getConnection().commit();
+    		
+    		logger.info(String.format("%s: duration = %s",
+					method,NotificationModel.getDuration(start,new DateTime())));
     	}
     	catch(Exception ex){
-    		this.getDbLayer().rollback();
+    		getDbLayer().getConnection().rollback();
     		throw ex;
     	}
 	}

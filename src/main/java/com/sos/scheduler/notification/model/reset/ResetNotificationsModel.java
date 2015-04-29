@@ -1,14 +1,13 @@
 package com.sos.scheduler.notification.model.reset;
 
-import java.io.File;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sos.util.SOSString;
 
-import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
+import com.sos.hibernate.classes.SOSHibernateConnection;
 import com.sos.scheduler.notification.jobs.reset.ResetNotificationsJobOptions;
+import com.sos.scheduler.notification.model.INotificationModel;
 import com.sos.scheduler.notification.model.NotificationModel;
 
 /**
@@ -16,34 +15,18 @@ import com.sos.scheduler.notification.model.NotificationModel;
  * @author Robert Ehrlich
  *
  */
-public class ResetNotificationsModel extends NotificationModel {
+public class ResetNotificationsModel extends NotificationModel implements INotificationModel {
 	
 	final Logger logger = LoggerFactory.getLogger(ResetNotificationsModel.class);
 	private ResetNotificationsJobOptions options;
 	
-	/**
-	 * 
-	 */
-	public ResetNotificationsModel(){
-    }
-    
- 
-    public void init(ResetNotificationsJobOptions opt, DBLayerSchedulerMon db) throws Exception{
-    	super.init(db);
-    	this.options = opt;
-    }
-    
-    
-    
-    /**
-     * 
-     */
-    @Override
-    public void exit() throws Exception{
-    	logger.info(String.format("exit"));
+	
+    public ResetNotificationsModel(SOSHibernateConnection conn, 
+    		ResetNotificationsJobOptions opt) throws Exception{
     	
-    	super.exit();
-   }
+    	super(conn);
+    	options = opt;
+    }
     
     
     /**
@@ -53,21 +36,54 @@ public class ResetNotificationsModel extends NotificationModel {
     public void process() throws Exception{
     	logger.info(String.format("process"));
     	
-    	super.process();
-    	
-   		logger.info(String.format("process: operation = %s",
-   				this.options.operation.Value()));
+    	logger.info(String.format("process: operation = %s",
+   				options.operation.Value()));
     		
-   		if(this.options.operation.Value().toLowerCase().equals(OPERATION_ACKNOWLEDGE)){
-   			this.resetAcknowledged(this.options.system_id.Value(),this.options.service_name.Value());
+   		if(options.operation.Value().toLowerCase().equals(OPERATION_ACKNOWLEDGE)){
+   			resetAcknowledged(options.system_id.Value(),options.service_name.Value());
    		}
-   		else if(this.options.operation.Value().toLowerCase().equals(OPERATION_RESET_SERVICES)){
-   			this.resetServices();
+   		else if(options.operation.Value().toLowerCase().equals(OPERATION_RESET_SERVICES)){
+   			resetServices();
    		}
    		else{
-   			throw new Exception(String.format("unknown operation = %s",this.options.operation.Value()));
+   			throw new Exception(String.format("unknown operation = %s",options.operation.Value()));
    		}
  	}
+    
+    /**
+     * 
+     * @param systemId
+     * @param serviceName
+     * @throws Exception
+     */
+    private void resetAcknowledged(String systemId, String serviceName) throws Exception{
+		String method = "resetAcknowledged";
+    	
+    	if(SOSString.isEmpty(systemId)){
+			throw new Exception(String.format("missing systemId"));
+		}
+		
+		logger.info(String.format("%s: systemId = %s, serviceName = %s",
+				method,
+				systemId,
+				serviceName));
+    	  	
+    	try {
+			getDbLayer().getConnection().beginTransaction();
+			int count = getDbLayer().resetAcknowledged(systemId,serviceName);
+			getDbLayer().getConnection().commit();
+			
+			logger.info(String.format("%s: updated %s",method,count));
+			
+		} catch (Exception ex) {
+			try {
+				getDbLayer().getConnection().rollback();
+			} catch (Exception x) {
+			}
+			throw ex;
+		}
+    }
+      
     
    /**
     * 
@@ -163,106 +179,5 @@ public class ResetNotificationsModel extends NotificationModel {
     	}*/
     }
     
-    /**
-     * 
-     * @param systemId
-     * @param serviceName
-     * @throws Exception
-     */
-    private void resetAcknowledged(String systemId, String serviceName) throws Exception{
-    	String functionName = "resetAcknowledged";
-    	
-    	if(SOSString.isEmpty(systemId)){
-			throw new Exception(String.format("missing system_id"));
-		}
-		
-		logger.info(String.format("%s: system id = %s, serviceName = %s",
-				functionName,
-				systemId,
-				serviceName));
-    	  	
-    	try {
-			this.getDbLayer().beginTransaction();
-			int count = this.getDbLayer().resetAcknowledged(systemId,serviceName);
-			
-			logger.info(String.format("%s: updated %s",functionName,count));
-			
-			this.getDbLayer().commit();
-		} catch (Exception ex) {
-			try {
-				this.getDbLayer().rollback();
-			} catch (Exception x) {
-			}
-			throw ex;
-		}
-    }
-    
-     /**
-     * 
-     * @return
-     * @throws Exception
-     */
-    @SuppressWarnings("unused")
-	private File initConfig() throws Exception{
-    	
-    	//@TODO musst gemacht werden
-    	/**
-    	LinkedHashMap<String,ArrayList<String>> jobChains = new LinkedHashMap<String,ArrayList<String>>();
-    	LinkedHashMap<String,ArrayList<String>> jobs = new LinkedHashMap<String,ArrayList<String>>();
-    	
-    	
-    	File xmlFile = new File(options.configuration_file.Value().replaceAll("\\{system_id\\}",options.system_id.Value()));
-		File schemaFile = new File(
-				options.configuration_schema_file.Value());
-
-		if (!schemaFile.exists()) {
-			throw new Exception(String.format("schema file not found: %s",
-					schemaFile.getAbsolutePath()));
-		}
-
-		if (!xmlFile.exists()) {
-			throw new Exception(String.format("xml file not found: %s",
-					xmlFile.getAbsolutePath()));
-		}
-		
-		logger.info(String.format("xml config file: %s",xmlFile.getAbsolutePath()));
-		
-		SystemMonitorNotification config = this.getSystemMonitorConfig(
-				schemaFile, xmlFile);
-		
-		for (Notification n : config.getNotification()) {
-
-			NotificationMonitor nm = n.getNotificationMonitor();
-			if (nm != null 
-					&& nm.getServiceNameOnError() != null
-					&& nm.getServiceNameOnError().equalsIgnoreCase(
-							this.options.service_name.Value())) {
-				NotificationObject no = n.getNotificationObject();
-				for (Object o : no.getJobsOrJobChainsOrTimers()) {
-					if (o instanceof JobChains) {
-						JobChains jcts = (JobChains) o;
-						for (JobChain jct : jcts.getJobChain()) {
-							jobChains = fillConfigHashMap(jobChains,
-									jct.getSchedulerId(), jct.getName());
-						}
-					} else if (o instanceof Jobs) {
-						Jobs js = (Jobs) o;
-						for (JobType j : js.getJob()) {
-							jobs = fillConfigHashMap(jobs, j.getSchedulerId(),
-									j.getName());
-						}
-					}
-				}
-			}
-		}
-
-		this.setConfigJobChains(jobChains);
-		this.setConfigJobs(jobs);
-		return xmlFile;
-		
-		*return null miust entfernt bzw überprüft werden
-		*/
-		return null;
-    }
-    
+   
 }

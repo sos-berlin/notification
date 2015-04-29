@@ -1,12 +1,11 @@
 package com.sos.scheduler.notification.plugins.notifier;
 
 
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Scanner;
-import java.util.StringTokenizer;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sos.spooler.Spooler;
@@ -28,9 +27,8 @@ import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
  *
  */
 public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
-
-	final org.slf4j.Logger logger = LoggerFactory.getLogger(SystemNotifierProcessBuilderPlugin.class);
-	
+	final Logger logger = LoggerFactory.getLogger(SystemNotifierProcessBuilderPlugin.class);
+		
 	/**
 	 * 
 	 */
@@ -41,9 +39,9 @@ public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
 		ElementNotificationMonitorCommand configuredCommand = this.getNotificationMonitor().getMonitorCommand();
 		if(configuredCommand == null){
 			throw new Exception(String.format("%s: Command element is missing (not configured)"
-					,this.getClass().getSimpleName()));
+					,getClass().getSimpleName()));
 		}
-		this.setCommand(configuredCommand.getCommand());
+		setCommand(configuredCommand.getCommand());
 	}
 
 	/**
@@ -74,23 +72,23 @@ public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
 			EServiceMessagePrefix prefix)
 			throws Exception {
 	
-		String functionName = "notifySystem";
+		String method = "notifySystem";
 		Process p = null;
 		int exitCode = 0;
 		try{
 			String serviceStatus = this.getServiceStatusValue(status);
 			String servicePrefix = this.getServiceMessagePrefixValue(prefix);
 			
-			this.resolveCommandAllTableFieldVars(dbLayer, notification,systemNotification,check);
-			this.resolveCommandServiceNameVar(systemNotification.getServiceName());
-			this.resolveCommandServiceStatusVar(serviceStatus);
-			this.resolveCommandServiceMessagePrefixVar(servicePrefix);
-			this.resolveCommandAllEnvVars();
+			resolveCommandAllTableFieldVars(dbLayer, notification,systemNotification,check);
+			resolveCommandServiceNameVar(systemNotification.getServiceName());
+			resolveCommandServiceStatusVar(serviceStatus);
+			resolveCommandServiceMessagePrefixVar(servicePrefix);
+			resolveCommandAllEnvVars();
 					
 			ProcessBuilder pb = new ProcessBuilder();
-			pb.command(this.createProcessBuilderCommand(this.getCommand()));
+			pb.command(createProcessBuilderCommand(getCommand()));
 			
-			logger.info(String.format("command configured = %s",this.getCommand()));
+			logger.info(String.format("command configured = %s",getCommand()));
 			logger.info(String.format("command to execute = %s",pb.command()));
 						
 			//Process ENV Variables setzen
@@ -98,9 +96,9 @@ public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
 			env.put(VARIABLE_ENV_PREFIX+"_SERVICE_STATUS",serviceStatus);
 			env.put(VARIABLE_ENV_PREFIX+"_SERVICE_NAME",systemNotification.getServiceName());
 			env.put(VARIABLE_ENV_PREFIX+"_SERVICE_MESSAGE_PREFIX",servicePrefix.trim());
-			env.put(VARIABLE_ENV_PREFIX+"_SERVICE_COMMAND",this.getCommand());
+			env.put(VARIABLE_ENV_PREFIX+"_SERVICE_COMMAND",getCommand());
 			if(this.getTableFields() != null){
-				for (Entry<String, String> entry : this.getTableFields().entrySet()) {
+				for (Entry<String, String> entry : getTableFields().entrySet()) {
 					env.put(VARIABLE_ENV_PREFIX_TABLE_FIELD+"_"+entry.getKey().toUpperCase(), 
 							normalizeVarValue(entry.getValue()));
 				}
@@ -143,41 +141,13 @@ public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
 			return exitCode;
 		}
 		catch(Exception ex){
-			throw new Exception(String.format("%s: %s",functionName,ex.getMessage()));
+			throw new Exception(String.format("%s: %s",method,ex.getMessage()));
 		}
 		finally{
 			try{
 				p.destroy();
 			}catch(Exception e){}
 		}
-	}
-	
-	/**
-	 * Input: cmd.exe /c | c:\xxx\test.exe param param param > test.txt
-	 * 
-	 * "cmd","/c",this.getCommand
-	 * "/bin/sh","-c",this.getCommand
-	 * 
-	 * @param input
-	 * @return
-	 */
-	private ArrayList<String> splitCommandX(String input) {
-		ArrayList<String> result = new ArrayList<String>();
-		String[] resultBefore = input.split("\\|", 2);
-		if(resultBefore.length > 1){
-			String[] arr = resultBefore[0].trim().split(" ");
-			for(int i=0;i<arr.length;i++){
-				result.add(arr[i]);
-			}
-			result.add(resultBefore[1].trim());
-		}
-		else{
-			StringTokenizer st = new StringTokenizer(input);
-			while(st.hasMoreTokens()) {
-				result.add(st.nextToken());
-			}
-		}
-		return result;
 	}
 	
 	/**
