@@ -92,6 +92,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 			cr.add(Restrictions.eq("osh.state",state));
 			cr.add(Restrictions.eq("oh.jobChain",jobChain));
 			cr.add(Restrictions.eq("oh.orderId",orderId));
+			cr.add(Restrictions.isNull("osh.endTime"));
 			
 			cr.setResultTransformer(Transformers.aliasToBean(DBItemNotificationSchedulerHistoryOrderStep.class));
 			cr.setReadOnly(true);
