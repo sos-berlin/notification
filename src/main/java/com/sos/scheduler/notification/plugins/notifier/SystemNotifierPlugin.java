@@ -113,7 +113,7 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 				serviceStatus = EServiceStatus.CRITICAL.name();
 			}
 		}
-		logger.info(String.format("%s: serviceStatus = %s",method,serviceStatus));
+		logger.debug(String.format("%s: serviceStatus = %s",method,serviceStatus));
 		
 		return serviceStatus;
 	}
@@ -130,7 +130,7 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 			servicePrefix = prefix.name()+" ";
 		}
 		
-		logger.info(String.format("%s: servicePrefix = %s",method,servicePrefix));
+		logger.debug(String.format("%s: servicePrefix = %s",method,servicePrefix));
 		return servicePrefix;
 	}
 	

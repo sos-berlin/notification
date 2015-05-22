@@ -835,7 +835,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 					.append("where notificationId = :notificationId ")
 					.append("and serviceName = :serviceName ")
 					.append("and lower(systemId) = :systemId");
-				
+			
 			Query query = getConnection().createQuery(sql.toString());
 			query.setParameter("notificationId", notificationId);
 			query.setParameter("systemId", systemId.toLowerCase());
@@ -857,7 +857,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 	 * @param stepFrom
 	 * @param stepTo
 	 * @return
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public DBItemSchedulerMonSystemNotifications getSystemNotification(
 			String systemId,
@@ -871,6 +871,16 @@ public class DBLayerSchedulerMon extends DBLayer{
 		try{
 			String method = "getSystemNotification";
 			
+			logger.debug(
+					String.format("%s: systemId = %s, serviceName = %s, notificationId = %s, checkId = %s, stepFrom = %s, stepTo = %s",
+					method,
+					systemId,
+					serviceName,
+					notificationId,
+					checkId,
+					stepFrom,
+					stepTo));
+			
 			StringBuffer sql = new StringBuffer("from "
 					+ DBITEM_SCHEDULER_MON_SYSNOTIFICATIONS + " ")
 					.append("where notificationId = :notificationId ")
@@ -878,12 +888,12 @@ public class DBLayerSchedulerMon extends DBLayer{
 					.append("and stepFrom = :stepFrom ")
 					.append("and stepTo = :stepTo ")
 					.append("and serviceName = :serviceName ")
-					.append("and lower(systemId) = :systemId");
+					.append("and lower(systemId) = :systemId ");
 				
 			Query query = getConnection().createQuery(sql.toString());
 			query.setParameter("notificationId", notificationId);
 			query.setParameter("checkId", checkId);
-			query.setParameter("stepFrom", stepTo);
+			query.setParameter("stepFrom", stepFrom);
 			query.setParameter("stepTo", stepTo);
 			query.setParameter("serviceName", serviceName);
 			query.setParameter("systemId", systemId.toLowerCase());
@@ -892,6 +902,17 @@ public class DBLayerSchedulerMon extends DBLayer{
 			List<DBItemSchedulerMonSystemNotifications> result = executeQueryList(method,sql,query);
 			if (result.size() > 0) {
 				return result.get(0);
+			}
+			else{
+				logger.debug(
+						String.format("%s: SystemNotification not found for systemId = %s, serviceName = %s, notificationId = %s, checkId = %s, stepFrom = %s, stepTo = %s",
+						method,
+						systemId,
+						serviceName,
+						notificationId,
+						checkId,
+						stepFrom,
+						stepTo));
 			}
 			return null;
 		}
@@ -1001,6 +1022,48 @@ public class DBLayerSchedulerMon extends DBLayer{
 	
 	/**
 	 * 
+	 * @param notification
+	 * @return
+	 * @throws Exception
+	 */
+	public DBItemSchedulerMonNotifications getOrderLastStepErrorNotification(DBItemSchedulerMonNotifications notification) throws Exception{
+		
+		try{
+			String method = "getOrderLastStepErrorNotification";
+			
+			logger.debug(String
+					.format("%s: orderHistoryId = %s",
+							method,
+							notification.getOrderHistoryId()));
+			
+			StringBuffer sql = new StringBuffer("from "+ DBITEM_SCHEDULER_MON_NOTIFICATIONS + " n1 ")
+			.append("where n1.orderHistoryId = :orderHistoryId ")
+			.append("and n1.step = ")
+			.append("  (select max(n2.step) ") 
+			.append("  from "+DBITEM_SCHEDULER_MON_NOTIFICATIONS+" n2 ") 
+			.append("  where n2.orderHistoryId = n1.orderHistoryId ") 
+			.append("  		and n2.error = 1 ")
+			.append("  		and n2.recovered = 0 ")
+			.append("  ) "); 
+		
+			Query query = getConnection().createQuery(sql.toString());
+			query.setParameter("orderHistoryId",notification.getOrderHistoryId());
+			query.setReadOnly(true);
+			
+			@SuppressWarnings("unchecked")
+			List<DBItemSchedulerMonNotifications> result = executeQueryList(method,sql,query);
+			if(result.size() > 0){
+				return result.get(0);
+			}
+			return null;
+		}
+		catch(Exception ex){
+			throw new Exception(SOSHibernateConnection.getException(ex));
+		}
+	}
+	
+	/**
+	 * 
 	 * @return
 	 * @throws Exception
 	 */
@@ -1060,7 +1123,52 @@ public class DBLayerSchedulerMon extends DBLayer{
 			throw new Exception(SOSHibernateConnection.getException(ex));
 		}
 	}
+	
+	/**
+	 * 
+	 * @param notification
+	 * @param orderCompleted
+	 * @return
+	 * @throws Exception
+	 */
+	public DBItemSchedulerMonNotifications getOrderLastStep(DBItemSchedulerMonNotifications notification, boolean orderCompleted) throws Exception{
+		
+		try{
+			String method = "getLastStep";
 			
+			logger.debug(String
+					.format("%s: orderHistoryId = %s, orderCompleted = %s",
+							method,
+							notification.getOrderHistoryId(),
+							orderCompleted));
+			
+			StringBuffer sql = new StringBuffer("from "+ DBITEM_SCHEDULER_MON_NOTIFICATIONS + " n1 ")
+			.append("where n1.orderHistoryId = :orderHistoryId ")
+			.append("and n1.step = ")
+			.append("  (select max(n2.step) ") 
+			.append("  from "+DBITEM_SCHEDULER_MON_NOTIFICATIONS+" n2 ") 
+			.append("  where n2.orderHistoryId = n1.orderHistoryId ") 
+			.append("  ) "); 
+			if(orderCompleted){
+				sql.append(" and n1.orderEndTime is not null");
+			}
+		
+			Query query = getConnection().createQuery(sql.toString());
+			query.setParameter("orderHistoryId",notification.getOrderHistoryId());
+			query.setReadOnly(true);
+			
+			@SuppressWarnings("unchecked")
+			List<DBItemSchedulerMonNotifications> result = executeQueryList(method,sql,query);
+			if(result.size() > 0){
+				return result.get(0);
+			}
+			return null;
+		}
+		catch(Exception ex){
+			throw new Exception(SOSHibernateConnection.getException(ex));
+		}
+	}
+	
 	/**
 	 * 
 	 * @return
@@ -1069,19 +1177,16 @@ public class DBLayerSchedulerMon extends DBLayer{
 	public List<DBItemSchedulerMonNotifications> getNotificationsForNotifySuccess() throws Exception{
 		try{
 			String method = "getNotificationsForNotifySuccess";
-			
-			StringBuffer sql = new StringBuffer("from "+DBITEM_SCHEDULER_MON_NOTIFICATIONS+" n1 ")
+		
+			StringBuffer sql = new StringBuffer("from "+ DBITEM_SCHEDULER_MON_NOTIFICATIONS + " n1 ")
 			.append("where n1.step = 1 ")
 			.append("and n1.orderEndTime is not null ")
-			.append("and ") 
-			.append("  (select n2.error ") 
-			.append("  from "+DBITEM_SCHEDULER_MON_NOTIFICATIONS+" n2 ") 
-			.append("  where n2.id = ") 
-			.append("    (select MAX(n3.id) ") 
-			.append("    from "+DBITEM_SCHEDULER_MON_NOTIFICATIONS+" n3 ")
-			.append("    where n3.orderHistoryId = n1.orderHistoryId ") 
-			.append("   )") 
-			.append("  ) = 0 ");  
+			.append("and ")
+			.append("  (select count(n2.id) ")
+			.append("  from " + DBITEM_SCHEDULER_MON_NOTIFICATIONS + " n2 ")
+			.append("  where n2.orderHistoryId = n1.orderHistoryId ")
+			.append("  		and n2.error = 0 ")
+			.append("  ) > 0 ");
 			
 			Query query = getConnection().createQuery(sql.toString());
 			query.setReadOnly(true);
