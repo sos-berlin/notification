@@ -45,7 +45,7 @@ public class SystemNotifierJobMain extends JSToolBox {
 
 		try {
 			SystemNotifierJob objM = new SystemNotifierJob();
-			SystemNotifierJobOptions objO = objM.Options();
+			SystemNotifierJobOptions objO = objM.getOptions();
 			
 			objO.CommandLineArgs(pstrArgs);
 			objM.Execute();

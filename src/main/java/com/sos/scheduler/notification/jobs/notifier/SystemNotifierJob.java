@@ -43,10 +43,10 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 		try{
 			spooler = sp;
 			
-			connection = new SOSHibernateConnection(Options().hibernate_configuration_file.Value());
-			connection.setAutoCommit(Options().connection_autocommit.value());
+			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.Value());
+			connection.setAutoCommit(getOptions().connection_autocommit.value());
 			connection.setIgnoreAutoCommitTransactions(true);
-			connection.setTransactionIsolation(Options().connection_transaction_isolation.value());
+			connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
 			connection.setUseOpenStatelessSession(true);
 			connection.addClassMapping(DBLayer.getNotificationClassMapping());
 			connection.connect();
@@ -82,10 +82,10 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 		logger.debug(conMethodName);
 
 		try { 
-			Options().CheckMandatory();
-			logger.debug(Options().toString());
+			getOptions().CheckMandatory();
+			logger.debug(getOptions().toString());
 			
-			SystemNotifierModel model = new SystemNotifierModel(connection,Options(),spooler);
+			SystemNotifierModel model = new SystemNotifierModel(connection,getOptions(),spooler);
 			model.process();
 		}
 		catch (Exception e) {
@@ -101,7 +101,7 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 	/**
 	 * 
 	 */
-	public SystemNotifierJobOptions Options() {
+	public SystemNotifierJobOptions getOptions() {
 
 		@SuppressWarnings("unused")  //$NON-NLS-1$
 		final String conMethodName = conClassName + "::Options";  //$NON-NLS-1$

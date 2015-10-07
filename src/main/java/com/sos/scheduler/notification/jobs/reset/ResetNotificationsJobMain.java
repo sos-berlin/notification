@@ -45,7 +45,7 @@ public class ResetNotificationsJobMain extends JSToolBox {
 
 		try {
 			ResetNotificationsJob objM = new ResetNotificationsJob();
-			ResetNotificationsJobOptions objO = objM.Options();
+			ResetNotificationsJobOptions objO = objM.getOptions();
 			
 			objO.CommandLineArgs(pstrArgs);
 			objM.Execute();

@@ -45,7 +45,7 @@ public class CleanupNotificationsJobMain extends JSToolBox {
 
 		try {
 			CleanupNotificationsJob objM = new CleanupNotificationsJob();
-			CleanupNotificationsJobOptions objO = objM.Options();
+			CleanupNotificationsJobOptions objO = objM.getOptions();
 			
 			objO.CommandLineArgs(pstrArgs);
 			objM.Execute();
