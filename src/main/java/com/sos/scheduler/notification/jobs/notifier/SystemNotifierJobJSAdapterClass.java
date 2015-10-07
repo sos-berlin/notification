@@ -26,7 +26,7 @@ public class SystemNotifierJobJSAdapterClass extends JobSchedulerJobAdapter  {
 	 */
 	public void init() throws Exception {
 		job = new SystemNotifierJob();
-		options = job.Options();
+		options = job.getOptions();
 		options.CurrentNodeName(this.getCurrentNodeName());
 		options.setAllOptions(getSchedulerParameterAsProperties(getJobOrOrderParameters()));
 	    job.setJSJobUtilites(this);

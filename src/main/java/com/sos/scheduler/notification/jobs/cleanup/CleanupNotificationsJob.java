@@ -34,10 +34,10 @@ public class CleanupNotificationsJob extends JSJobUtilitiesClass<CleanupNotifica
 		logger.debug(conMethodName);
 		
 		try{
-			connection = new SOSHibernateConnection(Options().hibernate_configuration_file.Value());
-			connection.setAutoCommit(Options().connection_autocommit.value());
+			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.Value());
+			connection.setAutoCommit(getOptions().connection_autocommit.value());
 			connection.setIgnoreAutoCommitTransactions(true);
-			connection.setTransactionIsolation(Options().connection_transaction_isolation.value());
+			connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
 			connection.setUseOpenStatelessSession(true);
 			connection.addClassMapping(DBLayer.getNotificationClassMapping());
 			connection.connect();
@@ -73,10 +73,10 @@ public class CleanupNotificationsJob extends JSJobUtilitiesClass<CleanupNotifica
 		logger.debug(conMethodName);
 
 		try { 
-			Options().CheckMandatory();
-			logger.debug(Options().toString());
+			getOptions().CheckMandatory();
+			logger.debug(getOptions().toString());
 			
-			CleanupNotificationsModel model = new CleanupNotificationsModel(connection,Options());
+			CleanupNotificationsModel model = new CleanupNotificationsModel(connection,getOptions());
 			model.process();
 		}
 		catch (Exception e) {
@@ -91,7 +91,7 @@ public class CleanupNotificationsJob extends JSJobUtilitiesClass<CleanupNotifica
 	/**
 	 * 
 	 */
-	public CleanupNotificationsJobOptions Options() {
+	public CleanupNotificationsJobOptions getOptions() {
 
 		@SuppressWarnings("unused")  //$NON-NLS-1$
 		final String conMethodName = conClassName + "::Options";  //$NON-NLS-1$

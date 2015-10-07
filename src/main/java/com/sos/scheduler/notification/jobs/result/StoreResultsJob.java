@@ -34,10 +34,10 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 		logger.debug(conMethodName);
 		
 		try{
-			connection = new SOSHibernateConnection(Options().scheduler_notification_hibernate_configuration_file.Value());
-			connection.setAutoCommit(Options().scheduler_notification_connection_autocommit.value());
+			connection = new SOSHibernateConnection(getOptions().scheduler_notification_hibernate_configuration_file.Value());
+			connection.setAutoCommit(getOptions().scheduler_notification_connection_autocommit.value());
 			connection.setIgnoreAutoCommitTransactions(true);
-			connection.setTransactionIsolation(Options().scheduler_notification_connection_transaction_isolation.value());
+			connection.setTransactionIsolation(getOptions().scheduler_notification_connection_transaction_isolation.value());
 			connection.setUseOpenStatelessSession(true);
 			connection.addClassMapping(DBLayer.getSchedulerClassMapping());
 			connection.addClassMapping(DBLayer.getNotificationClassMapping());
@@ -73,10 +73,10 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 		
 		logger.debug(conMethodName);
 		try { 
-			Options().CheckMandatory();
-			logger.debug(Options().toString());
+			getOptions().CheckMandatory();
+			logger.debug(getOptions().toString());
 			
-			StoreResultsModel model = new StoreResultsModel(connection,Options());
+			StoreResultsModel model = new StoreResultsModel(connection,getOptions());
 			model.process();
 		}	
 		catch (Exception e) {
@@ -93,7 +93,7 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 	/**
 	 * 
 	 */
-	public StoreResultsJobOptions Options() {
+	public StoreResultsJobOptions getOptions() {
 
 		@SuppressWarnings("unused")  //$NON-NLS-1$
 		final String conMethodName = conClassName + "::Options";  //$NON-NLS-1$

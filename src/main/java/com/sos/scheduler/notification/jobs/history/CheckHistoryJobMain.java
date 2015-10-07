@@ -46,7 +46,7 @@ public class CheckHistoryJobMain extends JSToolBox {
 
 		try {
 			CheckHistoryJob objM = new CheckHistoryJob();
-			CheckHistoryJobOptions objO = objM.Options();
+			CheckHistoryJobOptions objO = objM.getOptions();
 			
 			objO.CommandLineArgs(pstrArgs);
 			objM.Execute();

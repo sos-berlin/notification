@@ -48,7 +48,7 @@ public class StoreResultsJobMain extends JSToolBox {
 
 		try {
 			StoreResultsJob objM = new StoreResultsJob();
-			StoreResultsJobOptions objO = objM.Options();
+			StoreResultsJobOptions objO = objM.getOptions();
 			
 			objO.CommandLineArgs(pstrArgs);
 			objM.Execute();

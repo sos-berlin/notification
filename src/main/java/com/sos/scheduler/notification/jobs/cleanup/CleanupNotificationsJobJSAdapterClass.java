@@ -26,7 +26,7 @@ public class CleanupNotificationsJobJSAdapterClass extends JobSchedulerJobAdapte
 	 */
 	public void init() throws Exception {
 		job = new CleanupNotificationsJob();
-		options = job.Options();
+		options = job.getOptions();
 		options.CurrentNodeName(this.getCurrentNodeName());
 		options.setAllOptions(getSchedulerParameterAsProperties(getJobOrOrderParameters()));
 	    job.setJSJobUtilites(this);
