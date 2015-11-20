@@ -38,7 +38,7 @@ public class NotificationXmlHelper {
 	
     public static NodeList selectTimerJobChainDefinitions(SOSXMLXPath xpath) throws Exception{
 		
-		return xpath.selectNodeList("/SystemMonitorNotification/Timer/JobChain");
+		return xpath.selectNodeList("/SystemMonitorNotification/Timer/TimerJobChain");
 	}
 
 	public static NodeList selectTimerDefinitions(SOSXMLXPath xpath) throws Exception{
@@ -94,6 +94,10 @@ public class NotificationXmlHelper {
 	
 	public static String getTimerName(Element el){
 		return el.getAttribute("name");
+	}
+	
+	public static String getTimerRef(Element el){
+		return el.getAttribute("ref");
 	}
 	
 	public static String getNotifications(Element el){
@@ -181,7 +185,7 @@ public class NotificationXmlHelper {
 	
 	public static NodeList selectTimerJobChains(Node timer) throws Exception{
 		
-		return ((Element)timer).getElementsByTagName("JobChain");
+		return ((Element)timer).getElementsByTagName("TimerJobChain");
 	}
 	
     public static Node selectNotificationCommand(Element monitor) throws Exception{
