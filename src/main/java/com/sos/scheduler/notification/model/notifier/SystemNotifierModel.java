@@ -22,7 +22,7 @@ import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
 import com.sos.scheduler.notification.helper.CounterSystemNotifier;
 import com.sos.scheduler.notification.helper.ElementNotificationJobChain;
 import com.sos.scheduler.notification.helper.ElementNotificationMonitor;
-import com.sos.scheduler.notification.helper.ElementNotificationTimer;
+import com.sos.scheduler.notification.helper.ElementNotificationTimerRef;
 import com.sos.scheduler.notification.helper.NotificationXmlHelper;
 import com.sos.scheduler.notification.helper.EServiceMessagePrefix;
 import com.sos.scheduler.notification.helper.EServiceStatus;
@@ -47,8 +47,8 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 	
 	private ArrayList<ElementNotificationJobChain> monitorOnErrorJobChains;
 	private ArrayList<ElementNotificationJobChain> monitorOnSuccessJobChains;
-	private ArrayList<ElementNotificationTimer> monitorOnErrorTimers;
-	private ArrayList<ElementNotificationTimer> monitorOnSuccessTimers;
+	private ArrayList<ElementNotificationTimerRef> monitorOnErrorTimers;
+	private ArrayList<ElementNotificationTimerRef> monitorOnSuccessTimers;
 	
 	private CounterSystemNotifier counter;
 	
@@ -77,8 +77,8 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 	private void initMonitorObjects(){
 		monitorOnErrorJobChains = new ArrayList<ElementNotificationJobChain>();
 		monitorOnSuccessJobChains = new ArrayList<ElementNotificationJobChain>();
-		monitorOnErrorTimers = new ArrayList<ElementNotificationTimer>();
-		monitorOnSuccessTimers = new ArrayList<ElementNotificationTimer>();
+		monitorOnErrorTimers = new ArrayList<ElementNotificationTimerRef>();
+		monitorOnSuccessTimers = new ArrayList<ElementNotificationTimerRef>();
 	}
 	
 	/**
@@ -144,7 +144,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 	private void setMonitorObjects(SOSXMLXPath xpath,
 			NodeList monitors,
 			ArrayList<ElementNotificationJobChain> jobChains, 
-			ArrayList<ElementNotificationTimer> timers) throws Exception{
+			ArrayList<ElementNotificationTimerRef> timers) throws Exception{
 		
 		for(int i=0;i<monitors.getLength();i++){
 			Node n = monitors.item(i);
@@ -156,8 +156,8 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 				if(object.getNodeName().equalsIgnoreCase("JobChain")){
 					jobChains.add(new ElementNotificationJobChain(monitor,object));
 				}
-				else if(object.getNodeName().equalsIgnoreCase("Timer")){
-					timers.add(new ElementNotificationTimer(monitor,object));
+				else if(object.getNodeName().equalsIgnoreCase("TimerRef")){
+					timers.add(new ElementNotificationTimerRef(monitor,object));
 				}
 			}
 		}
@@ -175,7 +175,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 	 */
 	private void executeNotifyTimer(String systemId,
 			DBItemSchedulerMonChecks check,
-			ElementNotificationTimer timer,
+			ElementNotificationTimerRef timer,
 			boolean isNotifyOnErrorService) throws Exception{
 		//Indent für die Ausgabe
 		String method = "  executeNotifyTimer";
@@ -797,21 +797,21 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 	 */
 	private boolean checkDoNotificationTimer(
 			DBItemSchedulerMonChecks check,
-			ElementNotificationTimer timer){
+			ElementNotificationTimerRef timer){
 		String method = "  checkDoNotificationTimer";
 		
 		boolean notify = true;
 		
-		String name = timer.getName();
-		if(!check.getName().equals(name)){
+		String ref = timer.getRef();
+		if(!check.getName().equals(ref)){
 			notify = false;
 		}
 		
-		logger.debug(String.format("%s: %s. check db(name = %s) and configured(name = %s)",
+		logger.debug(String.format("%s: %s. check db(name = %s) and configured(ref = %s)",
 				method,
 				notify ? "ok" : "skip",
 				check.getName(),
-				name
+				ref
 				));
 		
 	return notify;
@@ -1370,8 +1370,8 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 	 * @throws Exception
 	 */
 	private void notifyTimer(String systemId,
-			ArrayList<ElementNotificationTimer> timersOnSuccess,
-			ArrayList<ElementNotificationTimer> timersOnError) throws Exception{
+			ArrayList<ElementNotificationTimerRef> timersOnSuccess,
+			ArrayList<ElementNotificationTimerRef> timersOnError) throws Exception{
 		String method = "notifyTimer";
 		
 		List<DBItemSchedulerMonChecks> result = getDbLayer().getChecksForNotifyTimer();
@@ -1389,7 +1389,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 			for(int i=0;i<timersOnSuccess.size();i++){
 				counter.addTotal();
 				
-				ElementNotificationTimer t = timersOnSuccess.get(i);
+				ElementNotificationTimerRef t = timersOnSuccess.get(i);
 				if(checkDoNotificationTimer(check, t)){
 					executeNotifyTimer(systemId,check,t,false);
 				}
@@ -1402,7 +1402,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 			for(int i=0;i<timersOnError.size();i++){
 				counter.addTotal();
 				
-				ElementNotificationTimer t = timersOnError.get(i);
+				ElementNotificationTimerRef t = timersOnError.get(i);
 				if(checkDoNotificationTimer(check, t)){
 					executeNotifyTimer(systemId,check,t,true);
 				}
