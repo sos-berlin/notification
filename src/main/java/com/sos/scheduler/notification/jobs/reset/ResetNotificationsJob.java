@@ -7,31 +7,19 @@ import com.sos.hibernate.classes.SOSHibernateConnection;
 import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.model.reset.ResetNotificationsModel;
 
-/**
- * 
- * @author Robert Ehrlich
- *
- */
 public class ResetNotificationsJob extends JSJobUtilitiesClass<ResetNotificationsJobOptions> {
-	private final String	conClassName	= ResetNotificationsJob.class.getSimpleName();
+	private final String	className	= ResetNotificationsJob.class.getSimpleName();
 	private static Logger	logger			= Logger.getLogger(ResetNotificationsJob.class);
 	private SOSHibernateConnection connection; 
 	
-	/**
-	 * 
-	 */
 	public ResetNotificationsJob() {
 		super(new ResetNotificationsJobOptions());
 	}
 
-	/**
-	 * 
-	 * @throws Exception
-	 */
 	public void init() throws Exception {
-		final String conMethodName = conClassName + "::init"; //$NON-NLS-1$
+		final String methodName = className + "::init";
 		
-		logger.debug(conMethodName);
+		logger.debug(methodName);
 		
 		try{
 			connection = new SOSHibernateConnection(Options().hibernate_configuration_file.Value());
@@ -48,29 +36,16 @@ public class ResetNotificationsJob extends JSJobUtilitiesClass<ResetNotification
 		}
 	}
 
-	/**
-	 * 
-	 */
 	public void exit(){
-		final String conMethodName = conClassName + "::exit"; //$NON-NLS-1$
-		
-		logger.debug(conMethodName);
-		try {
+		if(connection != null){
 			connection.disconnect();
-		} catch (Exception e) {
-			logger.warn(String.format("%s:%s", conMethodName, e.toString()));
 		}
 	}
 	
-	/**
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
-	public ResetNotificationsJob Execute() throws Exception {
-		final String conMethodName = conClassName + "::Execute";  //$NON-NLS-1$
+	public ResetNotificationsJob execute() throws Exception {
+		final String methodName = className + "::execute";
 
-		logger.debug(conMethodName);
+		logger.debug(methodName);
 
 		try { 
 			Options().CheckMandatory();
@@ -81,20 +56,14 @@ public class ResetNotificationsJob extends JSJobUtilitiesClass<ResetNotification
 		}
 		catch (Exception e) {
 			e.printStackTrace(System.err);
-			logger.error(String.format("%s: %s",conMethodName,e.toString()));
+			logger.error(String.format("%s: %s",methodName,e.toString()));
             throw e;			
 		}
 		
 		return this;
 	}
 	
-	/**
-	 * 
-	 */
 	public ResetNotificationsJobOptions Options() {
-
-		@SuppressWarnings("unused")  //$NON-NLS-1$
-		final String conMethodName = conClassName + "::Options";  //$NON-NLS-1$
 
 		if (objOptions == null) {
 			objOptions = new ResetNotificationsJobOptions();
@@ -102,4 +71,4 @@ public class ResetNotificationsJob extends JSJobUtilitiesClass<ResetNotification
 		return objOptions;
 	}
 
-}  // class ResetNotificationsJob
+}

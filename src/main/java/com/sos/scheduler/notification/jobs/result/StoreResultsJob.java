@@ -7,32 +7,16 @@ import com.sos.hibernate.classes.SOSHibernateConnection;
 import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.model.result.StoreResultsModel;
 
-/**
- * 
- * @author Robert Ehrlich
- *
- */
 public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions> {
-	private final String	conClassName	= StoreResultsJob.class.getSimpleName();
-	private static Logger	logger			= Logger.getLogger(StoreResultsJob.class);
+	private final String className = StoreResultsJob.class.getSimpleName();
+	private static Logger logger = Logger.getLogger(StoreResultsJob.class);
 	private SOSHibernateConnection connection; 
 	
-	/**
-	 * 
-	 */
 	public StoreResultsJob() {
 		super(new StoreResultsJobOptions());
 	}
 	
-	/**
-	 * 
-	 * @throws Exception
-	 */
 	public void init() throws Exception {
-		final String conMethodName = conClassName + "::init"; //$NON-NLS-1$
-		
-		logger.debug(conMethodName);
-		
 		try{
 			connection = new SOSHibernateConnection(Options().scheduler_notification_hibernate_configuration_file.Value());
 			connection.setAutoCommit(Options().scheduler_notification_connection_autocommit.value());
@@ -49,29 +33,16 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 		}
 	}
 
-	/**
-	 * 
-	 */
 	public void exit(){
-		final String conMethodName = conClassName + "::exit"; //$NON-NLS-1$
-		
-		logger.debug(conMethodName);
-		try {
+		if(connection != null){
 			connection.disconnect();
-		} catch (Exception e) {
-			logger.warn(String.format("%s:%s", conMethodName, e.toString()));
 		}
 	}
 	
-	/**
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
-	public StoreResultsJob Execute() throws Exception {
-		final String conMethodName = conClassName + "::Execute";  //$NON-NLS-1$
+	public StoreResultsJob execute() throws Exception {
+		final String methodName = className + "::execute"; 
 		
-		logger.debug(conMethodName);
+		logger.debug(methodName);
 		try { 
 			Options().CheckMandatory();
 			logger.debug(Options().toString());
@@ -80,28 +51,17 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 			model.process();
 		}	
 		catch (Exception e) {
-			e.printStackTrace(System.err);
-			logger.error(String.format("%s: %s",conMethodName, e));
+			logger.error(String.format("%s: %s",methodName, e));
             throw e;			
-		}
-		finally {
-			//logger.debug(String.format(Messages.getMsg("JSJ-I-111"), conMethodName ) );
 		}
 		return this;
 	}
 	
-	/**
-	 * 
-	 */
 	public StoreResultsJobOptions Options() {
-
-		@SuppressWarnings("unused")  //$NON-NLS-1$
-		final String conMethodName = conClassName + "::Options";  //$NON-NLS-1$
-
 		if (objOptions == null) {
 			objOptions = new StoreResultsJobOptions();
 		}
 		return objOptions;
 	}
 
-}  // class StoreResultsJob
+}
