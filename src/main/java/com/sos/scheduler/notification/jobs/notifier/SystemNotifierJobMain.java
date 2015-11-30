@@ -15,7 +15,7 @@ public class SystemNotifierJobMain extends JSToolBox {
 		int exitCode = 0;
 		SystemNotifierJob job = new SystemNotifierJob();
 		try {
-			SystemNotifierJobOptions options = job.Options();
+			SystemNotifierJobOptions options = job.getOptions();
 			options.CommandLineArgs(args);
 			
 			job.init(null);

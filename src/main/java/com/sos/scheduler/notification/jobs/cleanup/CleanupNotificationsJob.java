@@ -21,7 +21,7 @@ public class CleanupNotificationsJob extends JSJobUtilitiesClass<CleanupNotifica
 			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.Value());
 			connection.setAutoCommit(getOptions().connection_autocommit.value());
 			connection.setIgnoreAutoCommitTransactions(true);
-			connection.setTransactionIsolation(Options().connection_transaction_isolation.value());
+			connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
 			connection.setUseOpenStatelessSession(true);
 			connection.addClassMapping(DBLayer.getNotificationClassMapping());
 			connection.connect();
@@ -44,10 +44,10 @@ public class CleanupNotificationsJob extends JSJobUtilitiesClass<CleanupNotifica
 		logger.debug(methodName);
 
 		try { 
-			Options().CheckMandatory();
+			getOptions().CheckMandatory();
 			logger.debug(Options().toString());
 			
-			CleanupNotificationsModel model = new CleanupNotificationsModel(connection,Options());
+			CleanupNotificationsModel model = new CleanupNotificationsModel(connection,getOptions());
 			model.process();
 		}
 		catch (Exception e) {
@@ -58,7 +58,7 @@ public class CleanupNotificationsJob extends JSJobUtilitiesClass<CleanupNotifica
 		return this;
 	}
 	
-	public CleanupNotificationsJobOptions Options() {
+	public CleanupNotificationsJobOptions getOptions() {
 		if (objOptions == null) {
 			objOptions = new CleanupNotificationsJobOptions();
 		}

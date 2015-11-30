@@ -17,7 +17,7 @@ public class CheckHistoryJobMain extends JSToolBox {
 		int exitCode = 0;
 		CheckHistoryJob job = new CheckHistoryJob();
 		try {
-			CheckHistoryJobOptions options = job.Options();
+			CheckHistoryJobOptions options = job.getOptions();
 			options.CommandLineArgs(args);
 			
 			job.init();

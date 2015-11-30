@@ -10,7 +10,7 @@ import sos.spooler.Variable_set;
 import sos.util.SOSString;
 
 public class StoreResultsJobJSAdapterClass extends JobSchedulerJobAdapter  {
-	private static Logger	logger	= Logger.getLogger(StoreResultsJobJSAdapterClass.class);
+	private static Logger logger = Logger.getLogger(StoreResultsJobJSAdapterClass.class);
 
 	StoreResultsJob job = null;
 	StoreResultsJobOptions options = null;

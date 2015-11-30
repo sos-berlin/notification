@@ -23,10 +23,10 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 		spooler = sp;
 		
 		try{
-			connection = new SOSHibernateConnection(Options().hibernate_configuration_file.Value());
-			connection.setAutoCommit(Options().connection_autocommit.value());
+			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.Value());
+			connection.setAutoCommit(getOptions().connection_autocommit.value());
 			connection.setIgnoreAutoCommitTransactions(true);
-			connection.setTransactionIsolation(Options().connection_transaction_isolation.value());
+			connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
 			connection.setUseOpenStatelessSession(true);
 			connection.addClassMapping(DBLayer.getNotificationClassMapping());
 			connection.connect();
@@ -49,10 +49,10 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 		logger.debug(methodName);
 
 		try { 
-			Options().CheckMandatory();
-			logger.debug(Options().toString());
+			getOptions().CheckMandatory();
+			logger.debug(getOptions().toString());
 			
-			SystemNotifierModel model = new SystemNotifierModel(connection,Options(),spooler);
+			SystemNotifierModel model = new SystemNotifierModel(connection,getOptions(),spooler);
 			model.process();
 		}
 		catch (Exception e) {
@@ -62,7 +62,7 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 		return this;
 	}
 
-	public SystemNotifierJobOptions Options() {
+	public SystemNotifierJobOptions getOptions() {
 
 		if (objOptions == null) {
 			objOptions = new SystemNotifierJobOptions();

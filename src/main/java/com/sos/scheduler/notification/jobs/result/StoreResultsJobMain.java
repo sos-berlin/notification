@@ -16,7 +16,7 @@ public class StoreResultsJobMain extends JSToolBox {
 		int exitCode = 0;
 		StoreResultsJob job = new StoreResultsJob();
 		try {
-			StoreResultsJobOptions options = job.Options();
+			StoreResultsJobOptions options = job.getOptions();
 			options.CommandLineArgs(args);
 			
 			job.init();

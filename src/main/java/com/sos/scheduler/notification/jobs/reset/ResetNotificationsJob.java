@@ -22,10 +22,10 @@ public class ResetNotificationsJob extends JSJobUtilitiesClass<ResetNotification
 		logger.debug(methodName);
 		
 		try{
-			connection = new SOSHibernateConnection(Options().hibernate_configuration_file.Value());
-			connection.setAutoCommit(Options().connection_autocommit.value());
+			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.Value());
+			connection.setAutoCommit(getOptions().connection_autocommit.value());
 			connection.setIgnoreAutoCommitTransactions(true);
-			connection.setTransactionIsolation(Options().connection_transaction_isolation.value());
+			connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
 			connection.setUseOpenStatelessSession(true);
 			connection.addClassMapping(DBLayer.getNotificationClassMapping());
 			connection.connect();
@@ -48,10 +48,10 @@ public class ResetNotificationsJob extends JSJobUtilitiesClass<ResetNotification
 		logger.debug(methodName);
 
 		try { 
-			Options().CheckMandatory();
-			logger.debug(Options().toString());
+			getOptions().CheckMandatory();
+			logger.debug(getOptions().toString());
 			
-			ResetNotificationsModel model = new ResetNotificationsModel(connection,Options());
+			ResetNotificationsModel model = new ResetNotificationsModel(connection,getOptions());
 			model.process();
 		}
 		catch (Exception e) {
@@ -63,7 +63,7 @@ public class ResetNotificationsJob extends JSJobUtilitiesClass<ResetNotification
 		return this;
 	}
 	
-	public ResetNotificationsJobOptions Options() {
+	public ResetNotificationsJobOptions getOptions() {
 
 		if (objOptions == null) {
 			objOptions = new ResetNotificationsJobOptions();
