@@ -17,7 +17,7 @@ public class CheckHistoryJobJSAdapterClass extends JobSchedulerJobAdapter  {
 		try {
 			super.spooler_process();
 			
-			CheckHistoryJobOptions options = job.Options();
+			CheckHistoryJobOptions options = job.getOptions();
 			options.CurrentNodeName(this.getCurrentNodeName());
 			options.setAllOptions(getSchedulerParameterAsProperties(getParameters()));
 		    job.setJSJobUtilites(this);

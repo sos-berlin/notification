@@ -15,7 +15,7 @@ public class ResetNotificationsJobMain extends JSToolBox {
 		int exitCode = 0;
 		ResetNotificationsJob job = new ResetNotificationsJob();
 		try {
-			ResetNotificationsJobOptions options = job.Options();
+			ResetNotificationsJobOptions options = job.getOptions();
 			options.CommandLineArgs(args);
 			
 			job.init();

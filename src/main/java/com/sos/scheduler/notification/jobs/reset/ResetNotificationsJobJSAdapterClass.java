@@ -17,7 +17,7 @@ public class ResetNotificationsJobJSAdapterClass extends JobSchedulerJobAdapter 
 		try {
 			super.spooler_process();
 			
-			ResetNotificationsJobOptions options = job.Options();
+			ResetNotificationsJobOptions options = job.getOptions();
 			options.CurrentNodeName(this.getCurrentNodeName());
 			options.setAllOptions(getSchedulerParameterAsProperties(getParameters()));
 		    job.setJSJobUtilites(this);

@@ -17,7 +17,7 @@ public class CleanupNotificationsJobJSAdapterClass extends JobSchedulerJobAdapte
 		try {
 			super.spooler_process();
 			
-			CleanupNotificationsJobOptions options = job.Options();
+			CleanupNotificationsJobOptions options = job.getOptions();
 			options.CurrentNodeName(this.getCurrentNodeName());
 			options.setAllOptions(getSchedulerParameterAsProperties(getParameters()));
 		    job.setJSJobUtilites(this);

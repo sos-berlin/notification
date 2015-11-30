@@ -16,7 +16,7 @@ public class CleanupNotificationsJobMain extends JSToolBox {
 		int exitCode = 0;
 		CleanupNotificationsJob job = new CleanupNotificationsJob();
 		try {
-			CleanupNotificationsJobOptions options = job.Options();
+			CleanupNotificationsJobOptions options = job.getOptions();
 			options.CommandLineArgs(args);
 			
 			job.init();
