@@ -7,106 +7,63 @@ import com.sos.hibernate.classes.SOSHibernateConnection;
 import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.model.history.CheckHistoryModel;
 
-/**
- * 
- * @author Robert Ehrlich
- *
- */
 public class CheckHistoryJob extends JSJobUtilitiesClass<CheckHistoryJobOptions> {
-	private final String	conClassName	= CheckHistoryJob.class.getSimpleName();
-	private static Logger	logger			= Logger.getLogger(CheckHistoryJob.class);
+	private final String className = CheckHistoryJob.class.getSimpleName();
+	private static Logger logger = Logger.getLogger(CheckHistoryJob.class);
 	private SOSHibernateConnection connection; 
 	
-	/**
-	 * 
-	 * \brief CheckHistoryJob
-	 *
-	 * \details
-	 *
-	 */
 	public CheckHistoryJob() {
 		super(new CheckHistoryJobOptions());
 	}
 
-	/**
-	 * 
-	 * @throws Exception
-	 */
 	public void init() throws Exception {
-		final String conMethodName = conClassName + "::init"; //$NON-NLS-1$
-		
-		logger.debug(conMethodName);
-		
 		try{
-			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.Value());
-			connection.setAutoCommit(getOptions().connection_autocommit.value());
+			connection = new SOSHibernateConnection(Options().hibernate_configuration_file.Value());
+			connection.setAutoCommit(Options().connection_autocommit.value());
 			connection.setIgnoreAutoCommitTransactions(true);
-			connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
+			connection.setTransactionIsolation(Options().connection_transaction_isolation.value());
 			connection.setUseOpenStatelessSession(true);
 			connection.addClassMapping(DBLayer.getSchedulerClassMapping());
 			connection.addClassMapping(DBLayer.getNotificationClassMapping());
 			connection.connect();
 		}
 		catch(Exception ex){
-			throw new Exception(String.format("reporting connection: %s",
+			throw new Exception(String.format("init connection: %s",
 					ex.toString()));
 		}
 	}
 
-	/**
-	 * 
-	 */
 	public void exit(){
-		final String conMethodName = conClassName + "::exit"; //$NON-NLS-1$
-		
-		logger.debug(conMethodName);
-		try {
+		if(connection != null){
 			connection.disconnect();
-		} catch (Exception e) {
-			logger.warn(String.format("%s:%s", conMethodName, e.toString()));
 		}
 	}
 	
+	public CheckHistoryJob execute() throws Exception {
+		final String methodName = className + "::execute";
 
-	/**
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
-	public CheckHistoryJob Execute() throws Exception {
-		final String conMethodName = conClassName + "::Execute";  //$NON-NLS-1$
-
-		logger.debug(conMethodName);
+		logger.debug(methodName);
 
 		try { 
-			getOptions().CheckMandatory();
-			logger.debug(getOptions().toString());
+			Options().CheckMandatory();
+			logger.debug(Options().toString());
 			
-			CheckHistoryModel model = new CheckHistoryModel(connection,getOptions());
+			CheckHistoryModel model = new CheckHistoryModel(connection,Options());
 			model.process();
 		}
 		catch (Exception e) {
-			e.printStackTrace(System.err);
-			logger.error(String.format("%s: %s",conMethodName,e.getMessage()));
+			logger.error(String.format("%s: %s",methodName,e.getMessage()));
             throw e;			
 		}
 		
 		return this;
 	}
 	
-	/**
-	 * 
-	 */
-	public CheckHistoryJobOptions getOptions() {
-
-		@SuppressWarnings("unused")  //$NON-NLS-1$
-		final String conMethodName = conClassName + "::Options";  //$NON-NLS-1$
-
+	public CheckHistoryJobOptions Options() {
 		if (objOptions == null) {
 			objOptions = new CheckHistoryJobOptions();
 		}
 		return objOptions;
 	}
 
-
-}  // class CheckHistoryJob
+}

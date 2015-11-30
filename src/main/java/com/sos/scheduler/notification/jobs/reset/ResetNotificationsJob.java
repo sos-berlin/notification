@@ -7,37 +7,25 @@ import com.sos.hibernate.classes.SOSHibernateConnection;
 import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.model.reset.ResetNotificationsModel;
 
-/**
- * 
- * @author Robert Ehrlich
- *
- */
 public class ResetNotificationsJob extends JSJobUtilitiesClass<ResetNotificationsJobOptions> {
-	private final String	conClassName	= ResetNotificationsJob.class.getSimpleName();
+	private final String	className	= ResetNotificationsJob.class.getSimpleName();
 	private static Logger	logger			= Logger.getLogger(ResetNotificationsJob.class);
 	private SOSHibernateConnection connection; 
 	
-	/**
-	 * 
-	 */
 	public ResetNotificationsJob() {
 		super(new ResetNotificationsJobOptions());
 	}
 
-	/**
-	 * 
-	 * @throws Exception
-	 */
 	public void init() throws Exception {
-		final String conMethodName = conClassName + "::init"; //$NON-NLS-1$
+		final String methodName = className + "::init";
 		
-		logger.debug(conMethodName);
+		logger.debug(methodName);
 		
 		try{
-			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.Value());
-			connection.setAutoCommit(getOptions().connection_autocommit.value());
+			connection = new SOSHibernateConnection(Options().hibernate_configuration_file.Value());
+			connection.setAutoCommit(Options().connection_autocommit.value());
 			connection.setIgnoreAutoCommitTransactions(true);
-			connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
+			connection.setTransactionIsolation(Options().connection_transaction_isolation.value());
 			connection.setUseOpenStatelessSession(true);
 			connection.addClassMapping(DBLayer.getNotificationClassMapping());
 			connection.connect();
@@ -48,53 +36,34 @@ public class ResetNotificationsJob extends JSJobUtilitiesClass<ResetNotification
 		}
 	}
 
-	/**
-	 * 
-	 */
 	public void exit(){
-		final String conMethodName = conClassName + "::exit"; //$NON-NLS-1$
-		
-		logger.debug(conMethodName);
-		try {
+		if(connection != null){
 			connection.disconnect();
-		} catch (Exception e) {
-			logger.warn(String.format("%s:%s", conMethodName, e.toString()));
 		}
 	}
 	
-	/**
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
-	public ResetNotificationsJob Execute() throws Exception {
-		final String conMethodName = conClassName + "::Execute";  //$NON-NLS-1$
+	public ResetNotificationsJob execute() throws Exception {
+		final String methodName = className + "::execute";
 
-		logger.debug(conMethodName);
+		logger.debug(methodName);
 
 		try { 
-			getOptions().CheckMandatory();
-			logger.debug(getOptions().toString());
+			Options().CheckMandatory();
+			logger.debug(Options().toString());
 			
-			ResetNotificationsModel model = new ResetNotificationsModel(connection,getOptions());
+			ResetNotificationsModel model = new ResetNotificationsModel(connection,Options());
 			model.process();
 		}
 		catch (Exception e) {
 			e.printStackTrace(System.err);
-			logger.error(String.format("%s: %s",conMethodName,e.toString()));
+			logger.error(String.format("%s: %s",methodName,e.toString()));
             throw e;			
 		}
 		
 		return this;
 	}
 	
-	/**
-	 * 
-	 */
-	public ResetNotificationsJobOptions getOptions() {
-
-		@SuppressWarnings("unused")  //$NON-NLS-1$
-		final String conMethodName = conClassName + "::Options";  //$NON-NLS-1$
+	public ResetNotificationsJobOptions Options() {
 
 		if (objOptions == null) {
 			objOptions = new ResetNotificationsJobOptions();
@@ -102,4 +71,4 @@ public class ResetNotificationsJob extends JSJobUtilitiesClass<ResetNotification
 		return objOptions;
 	}
 
-}  // class ResetNotificationsJob
+}
