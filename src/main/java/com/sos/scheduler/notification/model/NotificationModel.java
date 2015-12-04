@@ -2,7 +2,6 @@ package com.sos.scheduler.notification.model;
 
 import java.io.File;
 import java.util.Locale;
-import java.util.Optional;
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
@@ -31,11 +30,11 @@ public class NotificationModel {
         ERROR, SUCCESS, RECOVERY, CHECK
     }
 
-    public NotificationModel(SOSHibernateConnection conn, Optional<String> fetchSize) throws Exception {
+    public NotificationModel(SOSHibernateConnection conn) throws Exception {
         if (conn == null) {
             throw new Exception("connection is NULL");
         }
-        dbLayer = new DBLayerSchedulerMon(conn, fetchSize);
+        dbLayer = new DBLayerSchedulerMon(conn);
     }
 
     public DBLayerSchedulerMon getDbLayer() {

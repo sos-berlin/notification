@@ -27,20 +27,13 @@ import com.sos.scheduler.history.db.SchedulerTaskHistoryDBItem;
 public class DBLayerSchedulerMon extends DBLayer{
 
 	final Logger LOGGER = LoggerFactory.getLogger(DBLayerSchedulerMon.class);
-	private Optional<Integer> largeResultFetchSize;
 	
-	public DBLayerSchedulerMon(SOSHibernateConnection conn,Optional<String> fetchSize){
+	public DBLayerSchedulerMon(SOSHibernateConnection conn){
 		super(conn);
-		
-		if(fetchSize.isPresent()){
-		    try{
-		        largeResultFetchSize = Optional.of(Integer.parseInt(fetchSize.get()));
-		    }
-		    catch(Exception ex){}
-		}
 	}
 	
 	public DBItemNotificationSchedulerHistoryOrderStep getNotFinishedOrderStepHistory(
+	        Optional<Integer> fetchSize,
 			String schedulerId, 
 			Long taskId, 
 			String state, 
@@ -91,7 +84,9 @@ public class DBLayerSchedulerMon extends DBLayer{
 			
 			cr.setResultTransformer(Transformers.aliasToBean(DBItemNotificationSchedulerHistoryOrderStep.class));
 			cr.setReadOnly(true);
-			cr = setLargeResultFetchSize(cr);
+			if(fetchSize.isPresent()){
+			    cr.setFetchSize(fetchSize.get());
+			}
 			
 			@SuppressWarnings("unchecked")
 			List<DBItemNotificationSchedulerHistoryOrderStep> result = cr.list();
@@ -163,7 +158,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	public Criteria getSchedulerHistorySteps(Date dateFrom, Date dateTo) throws Exception{
+	public Criteria getSchedulerHistorySteps(Optional<Integer> fetchSize, Date dateFrom, Date dateTo) throws Exception{
 		Criteria cr = getConnection().createCriteria(SchedulerOrderStepHistoryDBItem.class,"osh");
 		//join
 		cr.createAlias("osh.schedulerOrderHistoryDBItem","oh");
@@ -207,12 +202,14 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 		cr.setResultTransformer(Transformers.aliasToBean(DBItemNotificationSchedulerHistoryOrderStep.class));
 		cr.setReadOnly(true);
-		cr = setLargeResultFetchSize(cr);
+		if(fetchSize.isPresent()){
+		    cr.setFetchSize(fetchSize.get());
+		}
 		
 		return cr;
 	}
 
-	public Criteria getSchedulerHistorySteps(Long historyId, Long step) throws Exception{
+	public Criteria getSchedulerHistorySteps(Optional<Integer> fetchSize, Long historyId, Long step) throws Exception{
 		Criteria cr = getConnection().createCriteria(SchedulerOrderStepHistoryDBItem.class,"osh");
 		//join
 		cr.createAlias("osh.schedulerOrderHistoryDBItem","oh");
@@ -253,7 +250,9 @@ public class DBLayerSchedulerMon extends DBLayer{
 		
 		cr.setResultTransformer(Transformers.aliasToBean(DBItemNotificationSchedulerHistoryOrderStep.class));
 		cr.setReadOnly(true);
-		cr = setLargeResultFetchSize(cr);
+		if(fetchSize.isPresent()){
+		    cr.setFetchSize(fetchSize.get());
+		}
 		
 		return cr;
 	}
@@ -299,7 +298,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 	}
 	
 	@SuppressWarnings("unchecked")
-	public List<DBItemSchedulerMonChecks> getSchedulerMonChecksForSetTimer() throws Exception{
+	public List<DBItemSchedulerMonChecks> getSchedulerMonChecksForSetTimer(Optional<Integer> fetchSize) throws Exception{
 		try{
 			String method = "getSchedulerMonChecksForSetTimer";
 			StringBuffer sql = new StringBuffer("from "+DBITEM_SCHEDULER_MON_CHECKS+" ")
@@ -307,7 +306,9 @@ public class DBLayerSchedulerMon extends DBLayer{
 			
 			Query q = getConnection().createQuery(sql.toString());
 			q.setReadOnly(true);
-			q = setLargeResultFetchSize(q);
+			if(fetchSize.isPresent()){
+			    q.setFetchSize(fetchSize.get());
+			}
 			
 			return executeQueryList(method,sql,q);
 		}
@@ -355,7 +356,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	public int updateUncompletedNotifications(boolean isDbDependent,Date maxStartTime) throws Exception {
+	public int updateUncompletedNotifications(Optional<Integer> fetchSize, boolean isDbDependent,Date maxStartTime) throws Exception {
 		
 		boolean executed = false;
 		int result = 0;
@@ -473,7 +474,9 @@ public class DBLayerSchedulerMon extends DBLayer{
 				}
 				
 				notificationCriteria.setReadOnly(true);
-				notificationCriteria = setLargeResultFetchSize(notificationCriteria);
+				if(fetchSize.isPresent()){
+				    notificationCriteria.setFetchSize(fetchSize.get());
+				}
 				
 				StringBuffer update = new StringBuffer("update "+DBITEM_SCHEDULER_MON_NOTIFICATIONS+" ")
 				.append("set taskEndTime = :taskEndTime ")
@@ -486,7 +489,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 				.append("where id = :id");
 							
 				try{
-					ResultSet notificationResultSet = notificationProcessor.createResultSet(notificationCriteria,ScrollMode.FORWARD_ONLY,largeResultFetchSize);
+					ResultSet notificationResultSet = notificationProcessor.createResultSet(notificationCriteria,ScrollMode.FORWARD_ONLY,fetchSize);
 					
 					int readCount = 0;
 					while (notificationResultSet.next() )
@@ -496,8 +499,8 @@ public class DBLayerSchedulerMon extends DBLayer{
 					
 						DBItemSchedulerMonNotifications notification = (DBItemSchedulerMonNotifications)notificationProcessor.get();
 						
-						Criteria historyCriteria = getSchedulerHistorySteps(notification.getOrderHistoryId(),notification.getStep());
-						ResultSet historyResultSet = historyProcessor.createResultSet(DBItemNotificationSchedulerHistoryOrderStep.class,historyCriteria,ScrollMode.FORWARD_ONLY,largeResultFetchSize);
+						Criteria historyCriteria = getSchedulerHistorySteps(fetchSize,notification.getOrderHistoryId(),notification.getStep());
+						ResultSet historyResultSet = historyProcessor.createResultSet(DBItemNotificationSchedulerHistoryOrderStep.class,historyCriteria,ScrollMode.FORWARD_ONLY,fetchSize);
 						try{
 							while(historyResultSet.next()){
 								DBItemNotificationSchedulerHistoryOrderStep osh =  (DBItemNotificationSchedulerHistoryOrderStep)historyProcessor.get();
@@ -585,7 +588,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 			
 			Query query = getConnection().createQuery(sql.toString());
 			query.setReadOnly(true);
-			query = setLargeResultFetchSize(query);
 			
 			query.setParameter("taskId", taskId);
 	
@@ -813,7 +815,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 	}
 
 	@SuppressWarnings("unchecked")
-	public List<DBItemSchedulerMonChecks> getChecksForNotifyTimer()
+	public List<DBItemSchedulerMonChecks> getChecksForNotifyTimer(Optional<Integer> fetchSize)
 			throws Exception {
 		try{
 			String method = "getChecksForNotifyTimer";
@@ -823,8 +825,9 @@ public class DBLayerSchedulerMon extends DBLayer{
 			
 			Query q = getConnection().createQuery(sql.toString());
 			q.setReadOnly(true);
-			q = setLargeResultFetchSize(q);
-			
+			if(fetchSize.isPresent()){
+			    q.setFetchSize(fetchSize.get());
+			}
 			return executeQueryList(method,sql,q);
 		}
 		catch(Exception ex){
@@ -832,7 +835,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	public DBItemSchedulerMonNotifications getOrderLastStepErrorNotification(DBItemSchedulerMonNotifications notification) throws Exception{
+	public DBItemSchedulerMonNotifications getOrderLastStepErrorNotification(Optional<Integer> fetchSize, DBItemSchedulerMonNotifications notification) throws Exception{
 		
 		try{
 			String method = "getOrderLastStepErrorNotification";
@@ -855,7 +858,9 @@ public class DBLayerSchedulerMon extends DBLayer{
 			Query query = getConnection().createQuery(sql.toString());
 			query.setParameter("orderHistoryId",notification.getOrderHistoryId());
 			query.setReadOnly(true);
-			query = setLargeResultFetchSize(query);
+			if(fetchSize.isPresent()){
+			    query.setFetchSize(fetchSize.get());
+			}
 			
 			@SuppressWarnings("unchecked")
 			List<DBItemSchedulerMonNotifications> result = executeQueryList(method,sql,query);
@@ -870,7 +875,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 	}
 	
 	@SuppressWarnings("unchecked")
-	public List<DBItemSchedulerMonNotifications> getNotificationsForNotifyError()
+	public List<DBItemSchedulerMonNotifications> getNotificationsForNotifyError(Optional<Integer> fetchSize)
 			throws Exception {
 		try{
 			String method = "getNotificationsForNotifyError";
@@ -887,7 +892,9 @@ public class DBLayerSchedulerMon extends DBLayer{
 		
 			Query query = getConnection().createQuery(sql.toString());
 			query.setReadOnly(true);
-			query = setLargeResultFetchSize(query);
+			if(fetchSize.isPresent()){
+			    query.setFetchSize(fetchSize.get());
+			}
 			
 			return executeQueryList(method,sql,query);
 		}
@@ -897,7 +904,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 	}
 
 	@SuppressWarnings("unchecked")
-	public List<DBItemSchedulerMonNotifications> getNotificationsForNotifyRecovered()
+	public List<DBItemSchedulerMonNotifications> getNotificationsForNotifyRecovered(Optional<Integer> fetchSize)
 			throws Exception {
 		try{
 			String method = "getNotificationsForNotifyRecovered";
@@ -913,7 +920,9 @@ public class DBLayerSchedulerMon extends DBLayer{
 	
 			Query query = getConnection().createQuery(sql.toString());
 			query.setReadOnly(true);
-			query = setLargeResultFetchSize(query);
+			if(fetchSize.isPresent()){
+			    query.setFetchSize(fetchSize.get());
+			}
 			
 			return executeQueryList(method,sql,query);
 		}
@@ -922,7 +931,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	public DBItemSchedulerMonNotifications getOrderLastStep(DBItemSchedulerMonNotifications notification, boolean orderCompleted) throws Exception{
+	public DBItemSchedulerMonNotifications getOrderLastStep(Optional<Integer> fetchSize, DBItemSchedulerMonNotifications notification, boolean orderCompleted) throws Exception{
 		
 		try{
 			String method = "getLastStep";
@@ -947,7 +956,9 @@ public class DBLayerSchedulerMon extends DBLayer{
 			Query query = getConnection().createQuery(sql.toString());
 			query.setParameter("orderHistoryId",notification.getOrderHistoryId());
 			query.setReadOnly(true);
-			query = setLargeResultFetchSize(query);
+			if(fetchSize.isPresent()){
+			    query.setFetchSize(fetchSize.get());
+			}
 			
 			@SuppressWarnings("unchecked")
 			List<DBItemSchedulerMonNotifications> result = executeQueryList(method,sql,query);
@@ -962,7 +973,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 	}
 	
 	@SuppressWarnings("unchecked")
-	public List<DBItemSchedulerMonNotifications> getNotificationsForNotifySuccess() throws Exception{
+	public List<DBItemSchedulerMonNotifications> getNotificationsForNotifySuccess(Optional<Integer> fetchSize) throws Exception{
 		try{
 			String method = "getNotificationsForNotifySuccess";
 		
@@ -978,7 +989,9 @@ public class DBLayerSchedulerMon extends DBLayer{
 			
 			Query query = getConnection().createQuery(sql.toString());
 			query.setReadOnly(true);
-			query = setLargeResultFetchSize(query);
+			if(fetchSize.isPresent()){
+                query.setFetchSize(fetchSize.get());
+            }
 			
 			return executeQueryList(method,sql,query);
 		}
@@ -1016,7 +1029,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 	}
 	
 	@SuppressWarnings("unchecked")
-	public List<DBItemSchedulerMonNotifications> getOrderNotifications(Long orderHistoryId) throws Exception{
+	public List<DBItemSchedulerMonNotifications> getOrderNotifications(Optional<Integer> fetchSize, Long orderHistoryId) throws Exception{
 		try{
 			String method = "getOrderNotifications";
 			
@@ -1026,7 +1039,9 @@ public class DBLayerSchedulerMon extends DBLayer{
 			
 			Query q = getConnection().createQuery(sql.toString());
 			q.setReadOnly(true);
-			q = setLargeResultFetchSize(q);
+			if(fetchSize.isPresent()){
+                q.setFetchSize(fetchSize.get());
+            }
 			
 			q.setParameter("orderHistoryId",orderHistoryId);
 			
@@ -1191,30 +1206,5 @@ public class DBLayerSchedulerMon extends DBLayer{
 		catch(Exception ex){
 			throw new Exception(SOSHibernateConnection.getException(ex));
 		}
-	}
-	
-	private Query setLargeResultFetchSize(Query q){
-	    if(largeResultFetchSize.isPresent()){
-	        // use default value if fetchSize != null. for example Oracle = 10
-            // accept negative values. for example MySQL Integer.MIN_VALUE
-            // -2147483648
-            if (largeResultFetchSize.get() != 0) {
-                q.setFetchSize(largeResultFetchSize.get());
-            }
-        }
-	    return q;
-	}
-	
-	private Criteria setLargeResultFetchSize(Criteria cr){
-        if(largeResultFetchSize.isPresent()){
-            if(largeResultFetchSize.get() != 0){
-                cr.setFetchSize(largeResultFetchSize.get());
-            }
-        }
-        return cr;
-    }
-	
-	public Optional<Integer> getLargeResultFetchSize(){
-	    return this.largeResultFetchSize;
 	}
 }

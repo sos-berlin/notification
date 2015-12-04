@@ -1,7 +1,6 @@
 package com.sos.scheduler.notification.model.cleanup;
 
 import java.util.Date;
-import java.util.Optional;
 
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -21,7 +20,7 @@ public class CleanupNotificationsModel extends NotificationModel implements INot
 
     public CleanupNotificationsModel(SOSHibernateConnection conn, CleanupNotificationsJobOptions opt) throws Exception {
 
-        super(conn, Optional.of(opt.large_result_fetch_size.Value()));
+        super(conn);
         options = opt;
     }
 

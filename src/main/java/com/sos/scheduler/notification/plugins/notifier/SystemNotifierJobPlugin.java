@@ -17,18 +17,9 @@ import com.sos.scheduler.notification.helper.ElementNotificationMonitor;
 import com.sos.scheduler.notification.helper.ElementNotificationMonitorCommand;
 import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
 
-/**
- * 
- * @author Robert Ehrlich
- *
- */
 public class SystemNotifierJobPlugin extends SystemNotifierPlugin {
 	final Logger logger = LoggerFactory.getLogger(SystemNotifierJobPlugin.class);
 		
-
-	/**
-	 * 
-	 */
 	@Override
 	public void init(ElementNotificationMonitor monitor) throws Exception{
 		super.init(monitor);
@@ -42,9 +33,6 @@ public class SystemNotifierJobPlugin extends SystemNotifierPlugin {
 		setCommand(configuredCommand.getCommand());
 	}
 	
-	/**
-	 * 
-	 */
 	@Override
 	public int notifySystem(Spooler spooler, SystemNotifierJobOptions options,
 			DBLayerSchedulerMon dbLayer,
@@ -78,7 +66,7 @@ public class SystemNotifierJobPlugin extends SystemNotifierPlugin {
 		}
 		Task t = j.start(parameters);
 		
-		//an der Stelle noch nicht gesetzt
+		//@TODO is not set on this place 
 		return t.exit_code();
 	}
 

@@ -1,7 +1,5 @@
 package com.sos.scheduler.notification.model.reset;
 
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +17,7 @@ public class ResetNotificationsModel extends NotificationModel implements INotif
 
     public ResetNotificationsModel(SOSHibernateConnection conn, ResetNotificationsJobOptions opt) throws Exception {
 
-        super(conn, Optional.of(opt.large_result_fetch_size.Value()));
+        super(conn);
         options = opt;
     }
 

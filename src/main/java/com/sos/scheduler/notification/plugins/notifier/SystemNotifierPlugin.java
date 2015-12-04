@@ -27,18 +27,12 @@ import com.sos.scheduler.notification.helper.EServiceStatus;
 import com.sos.scheduler.notification.helper.ElementNotificationMonitor;
 import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
 
-/**
- * 
- * @author Robert Ehrlich
- *
- */
 public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 	final Logger logger = LoggerFactory.getLogger(SystemNotifierPlugin.class);
 	
 	private ElementNotificationMonitor notificationMonitor = null;
 	private String command;
 	private Map<String, String> tableFields = null;
-	
 	
 	public static final String VARIABLE_TABLE_PREFIX_NOTIFICATIONS = "MON_N";
 	public static final String VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS = "MON_SN";
@@ -47,25 +41,15 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 	public static final String VARIABLE_ENV_PREFIX = "SCHEDULER_MON";
 	public static final String VARIABLE_ENV_PREFIX_TABLE_FIELD = VARIABLE_ENV_PREFIX+"_TABLE";
 	
-	/**
-	 * 
-	 */
 	@Override
 	public void init(ElementNotificationMonitor monitor) throws Exception {
 		notificationMonitor = monitor;	
 	}
 	
-	/**
-	 * 
-	 * @param cmd
-	 */
 	public void setCommand(String cmd){
 		command = cmd;
 	}
 	
-	/**
-	 * 
-	 */
 	@Override
 	public int notifySystem(Spooler spooler, SystemNotifierJobOptions options,
 			DBLayerSchedulerMon dbLayer,
@@ -77,11 +61,6 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		return 0;
 	}
 	
-	/**
-	 * 
-	 * @param status
-	 * @return
-	 */
 	public String getServiceStatusValue(EServiceStatus status) throws Exception{
 		String method="getServiceStatusValue";
 		
@@ -90,7 +69,7 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		}
 		
 		/**
-		 * zB bei Nagios
+		 * e.g Nagios
 		 * 0- OK
 		 * 1-Warning
 		 * 2-Critical
@@ -118,11 +97,6 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		return serviceStatus;
 	}
 	
-	/**
-	 * 
-	 * @param prefix
-	 * @return
-	 */
 	public String getServiceMessagePrefixValue(EServiceMessagePrefix prefix){
 		String method="getServiceMessagePrefixValue";
 		String servicePrefix = "";
@@ -134,14 +108,6 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		return servicePrefix;
 	}
 	
-	/**
-	 * 
-	 * @param dbLayer
-	 * @param notification
-	 * @param systemNotification
-	 * @param check
-	 * @throws Exception
-	 */
 	public void resolveCommandAllTableFieldVars(DBLayerSchedulerMon dbLayer, 
 			DBItemSchedulerMonNotifications notification,
 			DBItemSchedulerMonSystemNotifications systemNotification,
@@ -159,13 +125,6 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		}
 	}
 	
-	/**
-	 * 
-	 * @param notification
-	 * @param systemNotification
-	 * @param check
-	 * @throws Exception
-	 */
 	private void setTableFields(DbItem notification,DbItem systemNotification,DbItem check) throws Exception{
 		if(notification == null){
 			throw new Exception("Cannot get table fields. DbItem notification is null");
@@ -206,13 +165,6 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		
 	}
 	
-	/**
-	 * 
-	 * @param newField
-	 * @param startTimeField
-	 * @param endTimeField
-	 * @throws Exception
-	 */
 	private void setTableFieldElapsed(String newField,String startTimeField,String endTimeField) throws Exception{
 		tableFields.put(newField,"");
 		
@@ -228,12 +180,6 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		}
 	}
 	
-	/**
-	 * 
-	 * @param obj
-	 * @param prefix
-	 * @throws Exception
-	 */
 	private void setDbItemTableFields(DbItem obj,String prefix) throws Exception{
 		Method[] ms = obj.getClass().getDeclaredMethods();
         for (Method m : ms) {
@@ -263,52 +209,28 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
             }
         }
 	}
-	
 
-	
-	
-	/**
-	 * 
-	 * @param value
-	 * @return
-	 */
 	public String normalizeVarValue(String value){
 		//new lines
 		value = value.replaceAll("\\r\\n|\\r|\\n", " ");
-		//sonst gehen die pfade verloren : zb.: d:\abc
+		//for values with paths: e.g.: d:\abc
 		value = value.replaceAll("\\\\","\\\\\\\\");
 		return value;
 	}
 	
-	/**
-	 * 
-	 * @param serviceName
-	 */
 	public void resolveCommandServiceNameVar(String serviceName){
 		resolveCommandVar("SERVICE_NAME",serviceName);
 	}
 	
-	/**
-	 * 
-	 * @param prefix
-	 */
 	public void resolveCommandServiceMessagePrefixVar(String prefix){
 		resolveCommandVar("SERVICE_MESSAGE_PREFIX",prefix);
 	}
 	
-	/**
-	 * 
-	 * @param serviceStatus
-	 */
 	public void resolveCommandServiceStatusVar(String serviceStatus){
 		resolveCommandVar("SERVICE_STATUS",serviceStatus);
 
 	}
 	
-	
-	/**
-	 * 
-	 */
 	public void resolveCommandAllEnvVars(){
 		@SuppressWarnings("unused")
 		String method="resolveCommandAllEnvVars";
@@ -320,26 +242,16 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		{  
 			String name  = entry.getKey();
 		    String value = this.normalizeVarValue(entry.getValue());
-		    //wegen RegExp
-			value = Matcher.quoteReplacement(value);
+		    value = Matcher.quoteReplacement(value);
 		    
-			//logger.debug(String.format("%s: env var: name = %s, value = %S",method,name,value));
 		    command = command.replaceAll("%(?i)"+name+"%",value);
 		}  
 	}
 	
-	/**
-	 * 
-	 * @return
-	 */
 	public ElementNotificationMonitor getNotificationMonitor(){
 		return notificationMonitor;
 	}
 	
-    /**
-     * 	
-     * @return
-     */
 	public String getCommand(){
 		return command;
 	}
@@ -348,27 +260,17 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
 		return tableFields;
 	}
 
-	/**
-	 * 
-	 */
 	@Override
 	public int notifySystemReset(String serviceName, EServiceStatus status,
 			EServiceMessagePrefix prefix, String command) throws Exception {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 	
-	/**
-	 * 
-	 * @param varName
-	 * @param valValue
-	 */
 	private void resolveCommandVar(String varName, String varValue){
 		if(command == null){ return;}
 		if(varValue == null){ return;}
 		
 		command = command.replaceAll("%"+varName+"%",varValue);
-
 	}	
 
 }
