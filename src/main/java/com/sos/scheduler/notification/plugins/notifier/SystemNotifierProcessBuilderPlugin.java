@@ -1,6 +1,5 @@
 package com.sos.scheduler.notification.plugins.notifier;
 
-
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Scanner;
@@ -21,17 +20,9 @@ import com.sos.scheduler.notification.helper.ElementNotificationMonitor;
 import com.sos.scheduler.notification.helper.ElementNotificationMonitorCommand;
 import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
 
-/**
- * 
- * @author Robert Ehrlich
- *
- */
 public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
 	final Logger logger = LoggerFactory.getLogger(SystemNotifierProcessBuilderPlugin.class);
 		
-	/**
-	 * 
-	 */
 	@Override
 	public void init(ElementNotificationMonitor monitor) throws Exception{
 		super.init(monitor);
@@ -59,7 +50,7 @@ public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
 	}
 	
 	/**
-	 * @TODO elapsed etc. ausrechnen
+	 * @TODO calculate elapsed etc. 
 	 */
 	@Override
 	public int notifySystem(Spooler spooler,
@@ -150,10 +141,6 @@ public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
 		}
 	}
 	
-	/**
-	 * 
-	 * @return
-	 */
 	private boolean isWindows(){
 		try{
 			return System.getProperty("os.name").toLowerCase().contains("windows");
@@ -162,11 +149,7 @@ public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
 			return false;
 		}
 	}
-	/**
-	 * 
-	 * @param command
-	 * @return
-	 */
+
 	private String[] createProcessBuilderCommand(String command){
 		String[] c = new String[3];
 		//if(OperatingSystem.isWindows){

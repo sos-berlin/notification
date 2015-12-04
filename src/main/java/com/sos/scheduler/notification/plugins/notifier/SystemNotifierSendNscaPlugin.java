@@ -57,17 +57,11 @@ import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
  * 25 = SAFER128
  * 26 = SAFER+
  *  
- * @author Robert Ehrlich
- *
  */
 public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
 	final Logger logger = LoggerFactory.getLogger(SystemNotifierSendNscaPlugin.class);
-	
 	private NagiosSettings settings = null;
-	
-	/**
-	 * 
-	 */
+
 	@Override
 	public void init(ElementNotificationMonitor monitor) throws Exception{
 		
@@ -103,11 +97,6 @@ public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
 		settings = nb.create();
 	}
 
-	/**
-	 * 
-	 * @param status
-	 * @return
-	 */
 	private Level resolveServiceStatus(String status){
 		Level l = null;
 		
@@ -128,9 +117,6 @@ public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
 		return l;
 	}
 	
-	/**
-	 * 
-	 */
 	@Override
 	public int notifySystem(Spooler spooler, SystemNotifierJobOptions options,
 			DBLayerSchedulerMon dbLayer,
@@ -172,9 +158,6 @@ public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
 		return 0;
 	}
 	
-	/**
-	 * 
-	 */
 	@Override
 	public int notifySystemReset(
 			String serviceName,
@@ -207,11 +190,6 @@ public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
 		return 0;
 	}
 	
-	/**
-	 * 
-	 * @param status
-	 * @return
-	 */
 	private Level getLevel(EServiceStatus status){
 		Level level = null;
 		if(status.equals(EServiceStatus.OK)){
@@ -229,10 +207,6 @@ public class SystemNotifierSendNscaPlugin extends SystemNotifierPlugin {
 	return level;
 	}
 	
-	/**
-	 * 
-	 * @param prefix
-	 */
 	private void setCommandPrefix(EServiceMessagePrefix prefix){
 		if(getCommand() == null){ return;}
 		if(prefix == null){ return;}

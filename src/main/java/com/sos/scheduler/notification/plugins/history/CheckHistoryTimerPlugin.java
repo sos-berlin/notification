@@ -3,6 +3,7 @@ package com.sos.scheduler.notification.plugins.history;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 
 import javax.script.ScriptEngine;
@@ -26,19 +27,11 @@ import com.sos.scheduler.notification.helper.ElementTimer;
 import com.sos.scheduler.notification.helper.ElementTimerScript;
 import com.sos.scheduler.notification.jobs.history.CheckHistoryJobOptions;
 
-/**
- * 
- * @author Robert Ehrlich
- * 
- */
 public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 
 	final Logger logger = LoggerFactory.getLogger(CheckHistoryTimerPlugin.class);
 	private CounterCheckHistoryTimer counter;
 	
-	/**
-	 * 
-	 */
 	@Override
 	public void onInit(LinkedHashMap<String, ElementTimer> timers,
 			CheckHistoryJobOptions options, DBLayerSchedulerMon dbLayer)
@@ -46,18 +39,12 @@ public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 
 	}
 
-	/**
-	 * 
-	 */
 	@Override
 	public void onExit(LinkedHashMap<String, ElementTimer> timers,
 			CheckHistoryJobOptions options, DBLayerSchedulerMon dbLayer)
 			throws Exception {
 	}
 
-	/**
-	 * 
-	 */
 	@Override
 	public void onProcess(LinkedHashMap<String, ElementTimer> timers,
 			CheckHistoryJobOptions options, DBLayerSchedulerMon dbLayer,
@@ -78,7 +65,16 @@ public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 
 		initCountChecks();
 		
-		List<DBItemSchedulerMonChecks> result = dbLayer.getSchedulerMonChecksForSetTimer();
+		Optional<Integer> largeResultFetchSize = Optional.empty();
+		try{
+            int fetchSize = options.large_result_fetch_size.value();
+            if(fetchSize != -1){
+                largeResultFetchSize = Optional.of(fetchSize);
+            }
+		}
+        catch(Exception ex){}
+		
+		List<DBItemSchedulerMonChecks> result = dbLayer.getSchedulerMonChecksForSetTimer(largeResultFetchSize);
 		logger.info(String.format("%s: found %s timer definitions and %s timers for check in the db",
 				method,
 				timers.size(),
@@ -106,12 +102,6 @@ public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 				counter.getRerun()));
 	}
 
-	/**
-	 * 
-	 * @param check
-	 * @return
-	 * @throws Exception
-	 */
 	private DBItemSchedulerMonChecks checkNotification(DBItemSchedulerMonChecks check,DBLayerSchedulerMon dbLayer) throws Exception{
 		String method = "checkNotification";
 		
@@ -148,20 +138,10 @@ public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 		return check;
 	}
 	
-	/**
-	 * 
-	 */
 	private void initCountChecks(){
 		counter = new CounterCheckHistoryTimer();
 	}
 	
-	/**
-	 * 
-	 * @param dbLayer
-	 * @param check
-	 * @param timer
-	 * @throws Exception
-	 */
 	private void analyzeCheck(DBLayerSchedulerMon dbLayer,
 			DBItemSchedulerMonChecks check, ElementTimer timer) throws Exception {
 		String method = "analyzeCheck"; 
@@ -306,20 +286,6 @@ public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 				minimumLang, minValue, maximumLang, maxValue,resultIds);
 	}
 
-	/**
-	 * 
-	 * @param dbLayer
-	 * @param check
-	 * @param resultNotification
-	 * @param stepFromNotification
-	 * @param stepToNotification
-	 * @param minimumLang
-	 * @param minValue
-	 * @param maximumLang
-	 * @param maxValue
-	 * @param resultIds
-	 * @throws Exception
-	 */
 	private void createCheck(DBLayerSchedulerMon dbLayer,
 			DBItemSchedulerMonChecks check,
 			DBItemSchedulerMonNotifications resultNotification, 
@@ -527,12 +493,6 @@ public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 		}
 	}
 
-	/**
-	 * Formatierung
-	 * 
-	 * @param d
-	 * @return
-	 */
 	public String formatDoubleValue(Double d) {
 		String s = String.format("%.2f", d);
 		if (d < 0.01) { // weitere Prüfung damit keine 0.00 in der Ausgabe steht
@@ -545,13 +505,6 @@ public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 		return s;
 	}
 
-	/**
-	 * 
-	 * @param lang
-	 * @param text
-	 * @return
-	 * @throws Exception
-	 */
 	public Double evalScript(String lang, String text) throws Exception {
 		String method = "  evalScript";
 		
@@ -569,25 +522,16 @@ public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 		logger.debug(String.format("%s: lang = %s, text =  %s",
 				method, lang, text));
 		
-		//return (Double)engine.eval(text);
 		return ((Number)engine.eval(text)).doubleValue();
 	}
 
-	/**
-	 * 
-	 * @param text
-	 * @param param
-	 * @param value
-	 * @return
-	 * @throws Exception
-	 */
 	private String resolveParam(String text, String param, String value)
 			throws Exception {
 		if (text == null || param == null || value == null) {
 			return null;
 		}
 
-		// sonst gehen die Pfade verloren : zb.: d:\abc
+		//quote for values with paths
 		value = value.replaceAll("\\\\", "\\\\\\\\");
 		value = Matcher.quoteReplacement(value);
 
@@ -595,9 +539,6 @@ public class CheckHistoryTimerPlugin implements ICheckHistoryPlugin {
 		return result.indexOf("%") > -1 ? null : result;
 	}
 
-	/**
-	 * 
-	 */
 	public void logAvailableEngines() {
 		ScriptEngineManager manager = new ScriptEngineManager();
 		List<ScriptEngineFactory> factories = manager.getEngineFactories();
