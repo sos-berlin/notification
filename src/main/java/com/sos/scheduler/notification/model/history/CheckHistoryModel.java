@@ -50,12 +50,21 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 	private boolean checkInsertNotifications = true;
 	private List<ICheckHistoryPlugin> plugins = null;
 	private CounterCheckHistory counter;
-	
+	private Optional<Integer> largeResultFetchSize = Optional.empty();
+    
 	public CheckHistoryModel(SOSHibernateConnection conn,
 			CheckHistoryJobOptions opt) throws Exception{
 		
-		super(conn,Optional.of(opt.large_result_fetch_size.Value()));
+		super(conn);
 		options = opt;
+		
+		try{
+            int fetchSize = options.large_result_fetch_size.value();
+            if(fetchSize != -1){
+                largeResultFetchSize = Optional.of(fetchSize);
+            }
+		}
+        catch(Exception ex){}
 		
 		initConfig();
 		registerPlugins();
@@ -70,8 +79,7 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 		plugins = new ArrayList<ICheckHistoryPlugin>();
 		timers = new LinkedHashMap<String, ElementTimer>();
 		jobChains = new LinkedHashMap<String,ArrayList<String>>();
-		
-		
+				
 		File dir = null;
 
 		File schemaFile = new File(options.schema_configuration_file.Value());
@@ -286,7 +294,7 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 			maxStartTime = DBLayer.getCurrentDateTimeMinusMinutes(uncompletedAge);
 		}
 				
-		int result = getDbLayer().updateUncompletedNotifications(options.allow_db_dependent_queries.value(),maxStartTime);
+		int result = getDbLayer().updateUncompletedNotifications(largeResultFetchSize, options.allow_db_dependent_queries.value(),maxStartTime);
 		logger.info(String.format("%s: bulk updateUncompletedNotifications, max_uncompleted_age = %s (from %s), updated = %s",
 				method,
 				options.max_uncompleted_age.Value(),
@@ -328,8 +336,8 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 			bpTimers.createInsertBatch(DBItemSchedulerMonChecks.class);
 			
 			getDbLayer().getConnection().beginTransaction();
-			criteria = getDbLayer().getSchedulerHistorySteps(dateFrom, dateTo);
-			ResultSet rsHistory = rspHistory.createResultSet(DBItemNotificationSchedulerHistoryOrderStep.class,criteria,ScrollMode.FORWARD_ONLY,getDbLayer().getLargeResultFetchSize());
+			criteria = getDbLayer().getSchedulerHistorySteps(largeResultFetchSize, dateFrom, dateTo);
+			ResultSet rsHistory = rspHistory.createResultSet(DBItemNotificationSchedulerHistoryOrderStep.class,criteria,ScrollMode.FORWARD_ONLY,largeResultFetchSize);
 			while (rsHistory.next()) {
 				counter.addTotal();
 				
@@ -477,9 +485,14 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 			logger.info(String.format("%s: duration = %s",method,NotificationModel.getDuration(start,new DateTime())));
 		} 
 		catch (Exception ex) {
-			getDbLayer().getConnection().rollback();
+		    Throwable e = SOSHibernateConnection.getException(ex);
+		    try{
+	            getDbLayer().getConnection().rollback();
+	        }
+	        catch(Exception exx){
+	            logger.warn(String.format("%s: %s", method, exx.toString()),exx);
+	        }
 			//schedulerConnection.rollback();
-			Throwable e = SOSHibernateConnection.getException(ex);
 			throw new Exception(String.format("%s: %s", method, e.toString()),e);
 		}
 		finally{

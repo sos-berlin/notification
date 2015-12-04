@@ -46,13 +46,22 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
     private ArrayList<ElementNotificationTimerRef> monitorOnErrorTimers;
     private ArrayList<ElementNotificationTimerRef> monitorOnSuccessTimers;
 
+    private Optional<Integer> largeResultFetchSize = Optional.empty();
     private CounterSystemNotifier counter;
 
     public SystemNotifierModel(SOSHibernateConnection conn, SystemNotifierJobOptions opt, Spooler sp) throws Exception {
 
-        super(conn, Optional.of(opt.large_result_fetch_size.Value()));
+        super(conn);
         options = opt;
         spooler = sp;
+        
+        try{
+            int fetchSize = options.large_result_fetch_size.value();
+            if(fetchSize != -1){
+                largeResultFetchSize = Optional.of(fetchSize);
+            }
+        }
+        catch(Exception ex){}
     }
 
     private void initMonitorObjects() {
@@ -310,7 +319,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             DBItemSchedulerMonNotifications lastNotification = null;
             Long stepFromIndex = new Long(0);
             Long stepToIndex = new Long(0);
-            List<DBItemSchedulerMonNotifications> steps = getDbLayer().getOrderNotifications(notification.getOrderHistoryId());
+            List<DBItemSchedulerMonNotifications> steps = getDbLayer().getOrderNotifications(largeResultFetchSize,notification.getOrderHistoryId());
             if (steps == null || steps.size() == 0) {
                 throw new Exception(String.format("%s: no steps found for orderHistoryId = %s", method, notification.getOrderHistoryId()));
             }
@@ -351,7 +360,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         } else {
             logger.debug(String.format("%s:  find lastStepForNotification for orderHistoryId = %s. notificationId = %s, systemId = %s. ", method, notification.getOrderHistoryId(), notification.getId(), systemId));
 
-            lastStepForNotification = getDbLayer().getOrderLastStep(notification, true);
+            lastStepForNotification = getDbLayer().getOrderLastStep(largeResultFetchSize, notification, true);
             if (lastStepForNotification == null) {
                 throw new Exception(String.format("lastStepForNotification is NULL"));
             } else {
@@ -443,7 +452,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
     private void notifySuccess(String systemId, ArrayList<ElementNotificationJobChain> jobChains) throws Exception {
         String method = "notifySuccess";
 
-        List<DBItemSchedulerMonNotifications> result = this.getDbLayer().getNotificationsForNotifySuccess();
+        List<DBItemSchedulerMonNotifications> result = this.getDbLayer().getNotificationsForNotifySuccess(largeResultFetchSize);
         logger.info(String.format("%s: found %s \"service_name_on_success\" definitions and %s notifications for success in the db", method, jobChains.size(), result.size()));
 
         initSendCounters();
@@ -592,7 +601,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
     private void notifyRecovered(String systemId, ArrayList<ElementNotificationJobChain> jobChains) throws Exception {
         String method = "notifyRecovered";
 
-        List<DBItemSchedulerMonNotifications> result = this.getDbLayer().getNotificationsForNotifyRecovered();
+        List<DBItemSchedulerMonNotifications> result = this.getDbLayer().getNotificationsForNotifyRecovered(largeResultFetchSize);
         logger.info(String.format("%s: found %s \"service_name_on_error\" definitions and %s notifications for recovery in the db", method, jobChains.size(), result.size()));
 
         initSendCounters();
@@ -675,7 +684,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             DBItemSchedulerMonNotifications lastNotification = null;
             Long stepFromIndex = new Long(0);
             Long stepToIndex = new Long(0);
-            List<DBItemSchedulerMonNotifications> steps = this.getDbLayer().getOrderNotifications(notification.getOrderHistoryId());
+            List<DBItemSchedulerMonNotifications> steps = this.getDbLayer().getOrderNotifications(largeResultFetchSize, notification.getOrderHistoryId());
             if (steps == null || steps.size() == 0) {
                 throw new Exception(String.format("%s: serviceName = %s. no steps found for orderHistoryId = %s", method, sm.getServiceName(), notification.getOrderHistoryId()));
             }
@@ -726,7 +735,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         } else {
             logger.debug(String.format("%s:  find lastStepForNotification for orderHistoryId = %s. notificationId = %s, systemId = %s. ", method, notification.getOrderHistoryId(), notification.getId(), systemId));
 
-            lastStepForNotification = getDbLayer().getOrderLastStepErrorNotification(notification);
+            lastStepForNotification = getDbLayer().getOrderLastStepErrorNotification(largeResultFetchSize, notification);
             if (lastStepForNotification == null) {
                 doNotify = false;
 
@@ -796,7 +805,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             ArrayList<ElementNotificationTimerRef> timersOnError) throws Exception {
         String method = "notifyTimer";
 
-        List<DBItemSchedulerMonChecks> result = getDbLayer().getChecksForNotifyTimer();
+        List<DBItemSchedulerMonChecks> result = getDbLayer().getChecksForNotifyTimer(largeResultFetchSize);
         logger.info(String.format("%s: found %s \"service_name_on_success\" and %s \"service_name_on_error\" timer definitions and %s checks for timers in the db", method, timersOnSuccess.size(), timersOnError.size(), result.size()));
 
         initSendCounters();
@@ -835,7 +844,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
     private void notifyError(String systemId, ArrayList<ElementNotificationJobChain> jobChains) throws Exception {
         String method = "notifyError";
 
-        List<DBItemSchedulerMonNotifications> result = getDbLayer().getNotificationsForNotifyError();
+        List<DBItemSchedulerMonNotifications> result = getDbLayer().getNotificationsForNotifyError(largeResultFetchSize);
         logger.info(String.format("%s: found %s \"service_name_on_error\" definitions and %s notifications for error in the db", method, jobChains.size(), result.size()));
 
         initSendCounters();

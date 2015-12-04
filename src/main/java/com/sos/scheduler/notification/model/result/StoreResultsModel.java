@@ -24,7 +24,7 @@ public class StoreResultsModel extends NotificationModel implements INotificatio
 
     public StoreResultsModel(SOSHibernateConnection conn, StoreResultsJobOptions opt) throws Exception {
 
-        super(conn, null);
+        super(conn);
         options = opt;
     }
 
@@ -95,7 +95,7 @@ public class StoreResultsModel extends NotificationModel implements INotificatio
         } else {
             logger.debug(String.format("%s: getNotFinishedOrderStepHistory: schedulerId = %s, taskId = %s, orderStepState = %s, jobChainName = %s, orderId = %s", method, tmp.getSchedulerId(), tmp.getTaskId(), tmp.getOrderStepState(), tmp.getJobChainName(), tmp.getOrderId()));
 
-            DBItemNotificationSchedulerHistoryOrderStep os = getDbLayer().getNotFinishedOrderStepHistory(tmp.getSchedulerId(), tmp.getTaskId(), tmp.getOrderStepState(), tmp.getJobChainName(), tmp.getOrderId());
+            DBItemNotificationSchedulerHistoryOrderStep os = getDbLayer().getNotFinishedOrderStepHistory(null,tmp.getSchedulerId(), tmp.getTaskId(), tmp.getOrderStepState(), tmp.getJobChainName(), tmp.getOrderId());
 
             if (os == null) {
                 logger.debug(String.format("%s: getNotFinishedOrderStepHistory not found for: schedulerId = %s, taskId = %s, orderStepState = %s, jobChainName = %s, orderId = %s", method, tmp.getSchedulerId(), tmp.getTaskId(), tmp.getOrderStepState(), tmp.getJobChainName(), tmp.getOrderId()));
