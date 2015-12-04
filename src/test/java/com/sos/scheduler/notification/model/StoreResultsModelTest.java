@@ -13,18 +13,10 @@ public class StoreResultsModelTest {
 	private SOSHibernateConnection connection;
 	private StoreResultsJobOptions options;
 	
-	/**
-	 * 
-	 * @param opt
-	 */
 	public StoreResultsModelTest(StoreResultsJobOptions opt){
 		options = opt;
 	}
 	
-	/**
-	 * 
-	 * @throws Exception
-	 */
 	public void init() throws Exception {
 		connection = new SOSHibernateConnection(options.scheduler_notification_hibernate_configuration_file.Value());
 		connection.setAutoCommit(options.scheduler_notification_connection_autocommit.value());
@@ -36,27 +28,19 @@ public class StoreResultsModelTest {
 		connection.connect();
 	}
 
-	/**
-	 * 
-	 */
 	public void exit() {
 		if (connection != null) {
 			connection.disconnect();
 		}
 	}
 
-	/**
-	 * 
-	 * @param args
-	 * @throws Exception
-	 */
 	public static void main(String[] args) throws Exception {
-		String config = "D:/Arbeit/scheduler/jobscheduler/re-dell_4646_snap_1_9_build130/scheduler_data/config";
+		String config = "D:/scheduler/config";
 		
 		StoreResultsJobOptions opt = new StoreResultsJobOptions();
 		opt.scheduler_notification_hibernate_configuration_file.Value(config+"/hibernate.cfg.xml");
 		
-		opt.mon_results_scheduler_id.Value("re-dell_4646_snap_1_9_build130");
+		opt.mon_results_scheduler_id.Value("my_scheduler_id");
 		opt.mon_results_task_id.value(17600149);
 		opt.mon_results_order_step_state.Value("moveCSV");
 		opt.mon_results_job_chain_name.Value("orders_setback/Move");
@@ -70,13 +54,14 @@ public class StoreResultsModelTest {
 			t.init();
 
 			StoreResultsModel model = new StoreResultsModel(t.connection,t.options);
-			//model.process();
-			
+			model.process();
+
+			/**
 			model.getDbLayer().getNotFinishedOrderStepHistory(opt.mon_results_scheduler_id.Value(), 
 					new Long(opt.mon_results_task_id.value()), 
 					opt.mon_results_order_step_state.Value(), 
 					opt.mon_results_job_chain_name.Value(), 
-					opt.mon_results_order_id.Value());
+					opt.mon_results_order_id.Value());*/
 			
 			logger.info("END --");
 			

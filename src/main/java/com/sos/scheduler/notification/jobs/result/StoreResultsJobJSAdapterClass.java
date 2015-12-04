@@ -16,7 +16,7 @@ public class StoreResultsJobJSAdapterClass extends JobSchedulerJobAdapter  {
 	StoreResultsJobOptions options = null;
 	
 	/**
-	 * call in procces_after or in process_task_before
+	 * call in procces_after or in process_task_after
 	 * 
 	 */
 	public void init() throws Exception {
@@ -69,7 +69,6 @@ public class StoreResultsJobJSAdapterClass extends JobSchedulerJobAdapter  {
 			options.mon_results_order_id.Value((order == null ? null : order.id()));
 			options.mon_results_standalone.value(order == null ? true : false);
 			
-			// job scheduler versions bever 1.9
 			if(order != null && order.job_chain() != null){
 				options.mon_results_job_chain_name.Value(order.job_chain().path());
 					
@@ -114,10 +113,10 @@ public class StoreResultsJobJSAdapterClass extends JobSchedulerJobAdapter  {
 	 * 
 	 */
 	@Override
-	public boolean spooler_process_after(boolean spooler_process_result) throws Exception {
+	public boolean spooler_process_after(boolean processResult) throws Exception {
 		boolean  result = false;
 		try{
-			result = super.spooler_process_after(spooler_process_result);
+			result = super.spooler_process_after(processResult);
 		}
 		catch(Exception ex){
 			throw ex;
