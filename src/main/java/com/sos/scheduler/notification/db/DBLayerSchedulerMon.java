@@ -3,6 +3,7 @@ package com.sos.scheduler.notification.db;
 import java.sql.ResultSet;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.hibernate.Criteria;
 import org.hibernate.Query;
@@ -18,33 +19,27 @@ import org.slf4j.LoggerFactory;
 import sos.util.SOSString;
 
 import com.sos.hibernate.classes.SOSHibernateConnection;
-import com.sos.hibernate.classes.SOSHibernateConnection.DBMS;
+import com.sos.hibernate.classes.SOSHibernateConnection.Dbms;
 import com.sos.hibernate.classes.SOSHibernateResultSetProcessor;
 import com.sos.scheduler.history.db.SchedulerOrderStepHistoryDBItem;
 import com.sos.scheduler.history.db.SchedulerTaskHistoryDBItem;
 
 public class DBLayerSchedulerMon extends DBLayer{
 
-	final Logger logger = LoggerFactory.getLogger(DBLayerSchedulerMon.class);
-		
-	/**
-	 * 
-	 * @param conn
-	 */
-	public DBLayerSchedulerMon(SOSHibernateConnection conn){
+	final Logger LOGGER = LoggerFactory.getLogger(DBLayerSchedulerMon.class);
+	private Optional<Integer> largeResultFetchSize;
+	
+	public DBLayerSchedulerMon(SOSHibernateConnection conn,Optional<String> fetchSize){
 		super(conn);
+		
+		if(fetchSize.isPresent()){
+		    try{
+		        largeResultFetchSize = Optional.of(Integer.parseInt(fetchSize.get()));
+		    }
+		    catch(Exception ex){}
+		}
 	}
 	
-	/**
-	 * 
-	 * @param schedulerId
-	 * @param taskId
-	 * @param state
-	 * @param jobChain
-	 * @param orderId
-	 * @return
-	 * @throws Exception
-	 */
 	public DBItemNotificationSchedulerHistoryOrderStep getNotFinishedOrderStepHistory(
 			String schedulerId, 
 			Long taskId, 
@@ -96,6 +91,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 			
 			cr.setResultTransformer(Transformers.aliasToBean(DBItemNotificationSchedulerHistoryOrderStep.class));
 			cr.setReadOnly(true);
+			cr = setLargeResultFetchSize(cr);
 			
 			@SuppressWarnings("unchecked")
 			List<DBItemNotificationSchedulerHistoryOrderStep> result = cr.list();
@@ -112,11 +108,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	/**
-	 * 
-	 * @param date
-	 * @throws Exception
-	 */
 	public void cleanupNotifications(Date date) throws Exception{
 		try{
 			StringBuffer sql = new StringBuffer("delete from "+DBITEM_SCHEDULER_MON_NOTIFICATIONS+" ")
@@ -149,13 +140,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 			
-	/**
-	 * 
-	 * @param systemId
-	 * @param serviceName
-	 * @return
-	 * @throws Exception 
-	 */
 	public int resetAcknowledged(String systemId,String serviceName) throws Exception{
 		try{
 			StringBuffer sql = new StringBuffer("update "
@@ -179,14 +163,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	
-	/**
-	 * 
-	 * @param dateFrom
-	 * @param dateTo
-	 * @return
-	 * @throws Exception
-	 */
 	public Criteria getSchedulerHistorySteps(Date dateFrom, Date dateTo) throws Exception{
 		Criteria cr = getConnection().createCriteria(SchedulerOrderStepHistoryDBItem.class,"osh");
 		//join
@@ -231,18 +207,11 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 		cr.setResultTransformer(Transformers.aliasToBean(DBItemNotificationSchedulerHistoryOrderStep.class));
 		cr.setReadOnly(true);
+		cr = setLargeResultFetchSize(cr);
 		
 		return cr;
 	}
 
-	
-	/**
-	 * 
-	 * @param dateFrom
-	 * @param dateTo
-	 * @return
-	 * @throws Exception
-	 */
 	public Criteria getSchedulerHistorySteps(Long historyId, Long step) throws Exception{
 		Criteria cr = getConnection().createCriteria(SchedulerOrderStepHistoryDBItem.class,"osh");
 		//join
@@ -284,15 +253,11 @@ public class DBLayerSchedulerMon extends DBLayer{
 		
 		cr.setResultTransformer(Transformers.aliasToBean(DBItemNotificationSchedulerHistoryOrderStep.class));
 		cr.setReadOnly(true);
+		cr = setLargeResultFetchSize(cr);
 		
 		return cr;
 	}
-	/**
-	 * 
-	 * @param notificationId
-	 * @return
-	 * @throws Exception 
-	 */
+
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonNotifications> getNotificationOrderSteps(Long notificationId) throws Exception{
 		try{	
@@ -315,12 +280,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 			throw new Exception(SOSHibernateConnection.getException(ex));
 		}
 	}
-	/**
-	 * 
-	 * @param notificationId
-	 * @return
-	 * @throws Exception
-	 */
+
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonResults> getNotificationResults(Long notificationId) throws Exception{
 		try{	
@@ -338,11 +298,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	/**
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonChecks> getSchedulerMonChecksForSetTimer() throws Exception{
 		try{
@@ -352,6 +307,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 			
 			Query q = getConnection().createQuery(sql.toString());
 			q.setReadOnly(true);
+			q = setLargeResultFetchSize(q);
 			
 			return executeQueryList(method,sql,q);
 		}
@@ -360,16 +316,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	
-	/**
-	 * 
-	 * @param check
-	 * @param stepFromStartTime
-	 * @param stepToEndTime
-	 * @param text
-	 * @param resultIds
-	 * @throws Exception
-	 */
 	public void setNotificationCheck(
 			DBItemSchedulerMonChecks check,
 			Date stepFromStartTime,
@@ -392,15 +338,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	/**
-	 * 
-	 * @param check
-	 * @param stepFromStartTime
-	 * @param stepToEndTime
-	 * @param text
-	 * @param resultIds
-	 * @throws Exception
-	 */
 	public void setNotificationCheckForRerun(DBItemSchedulerMonChecks check,Date stepFromStartTime,
 			Date stepToEndTime,String text,String resultIds) throws Exception{
 		
@@ -418,22 +355,14 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	/**
-	 * 
-	 * @param isDbDependent
-	 * @param maxStartTime
-	 * @return
-	 * @throws Exception
-	 */
 	public int updateUncompletedNotifications(boolean isDbDependent,Date maxStartTime) throws Exception {
 		
 		boolean executed = false;
 		int result = 0;
 		try{
 			if(isDbDependent){
-				//Table t_mn = DBItemSchedulerMonNotifications.class.getAnnotation(Table.class);
-				Enum<SOSHibernateConnection.DBMS> dbms = getConnection().getDbms();
-				if(dbms.equals(DBMS.MSSQL)){
+				Enum<SOSHibernateConnection.Dbms> dbms = getConnection().getDbms();
+				if(dbms.equals(Dbms.MSSQL)){
 					executed = true;
 					StringBuffer sb = new StringBuffer("update mn ")
 							.append("set mn.ORDER_END_TIME = oh.END_TIME ")
@@ -455,7 +384,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 							.append("and mn.STEP = osh.STEP");
 					result = getConnection().createSQLQuery(sb.toString()).executeUpdate();
 				}
-				else if(dbms.equals(DBMS.ORACLE) || dbms.equals(DBMS.DB2)){
+				else if(dbms.equals(Dbms.ORACLE) || dbms.equals(Dbms.DB2)){
 					executed = true;
 					StringBuffer sb = new StringBuffer("update "+TABLE_SCHEDULER_MON_NOTIFICATIONS+" mn ")
 					.append("set (")
@@ -484,7 +413,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 					.append("where mn.ORDER_END_TIME is null");
 					 result = getConnection().createSQLQuery(sb.toString()).executeUpdate();
 				}
-				else if(dbms.equals(DBMS.MYSQL)){
+				else if(dbms.equals(Dbms.MYSQL)){
 					executed = true;
 					
 					StringBuffer sb = new StringBuffer("update " + TABLE_SCHEDULER_MON_NOTIFICATIONS+ " mn")
@@ -505,7 +434,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 					result = getConnection().createSQLQuery(sb.toString()).executeUpdate();
 			
 				}
-				else if(dbms.equals(DBMS.PGSQL) || dbms.equals(DBMS.SYBASE)){
+				else if(dbms.equals(Dbms.PGSQL) || dbms.equals(Dbms.SYBASE)){
 					executed = true;
 					StringBuffer sb = new StringBuffer("update "+TABLE_SCHEDULER_MON_NOTIFICATIONS+" ")
 					.append("set "+quote("ORDER_END_TIME")+" = oh."+quote("END_TIME")+" ")
@@ -525,36 +454,9 @@ public class DBLayerSchedulerMon extends DBLayer{
 					
 					result = getConnection().createSQLQuery(sb.toString()).executeUpdate();
 				}
-				/**
-				else if(this.dialectClassName.contains("XXsybase")){
-					//POSTGRESQL & SYBASE
-					executed = true;
-					StringBuffer sb = new StringBuffer("update "+TABLE_SCHEDULER_MON_NOTIFICATIONS+" ")
-					.append("set "+quoteName("ORDER_END_TIME")+" = oh."+quoteName("END_TIME")+" ")
-					.append(","+quoteName("TASK_END_TIME")+" = h."+quoteName("END_TIME")+" ")
-					.append(","+quoteName("ORDER_STEP_END_TIME")+" = osh."+quoteName("END_TIME")+" ")
-					.append(","+quoteName("ERROR")+" = osh."+quoteName("ERROR")+" ")
-					.append(","+quoteName("ERROR_CODE")+" = osh."+quoteName("ERROR_CODE")+" ")
-					.append(","+quoteName("ERROR_TEXT")+" = osh."+quoteName("ERROR_TEXT")+" ")
-					.append("from " + TABLE_SCHEDULER_MON_NOTIFICATIONS + " mn ")
-					.append("inner join " + TABLE_SCHEDULER_ORDER_HISTORY + " oh ")
-					.append("on mn."+quoteName("ORDER_HISTORY_ID")+" = oh."+quoteName("HISTORY_ID")+" ")
-					.append("inner join " + TABLE_SCHEDULER_ORDER_STEP_HISTORY + " osh ")
-					.append("on osh."+quoteName("HISTORY_ID")+" = oh."+quoteName("HISTORY_ID")+" ")
-					.append("inner join " + TABLE_SCHEDULER_HISTORY + " h ")
-					.append("on h."+quoteName("ID")+" = osh."+quoteName("TASK_ID")+" ")
-					//.append("where mn."+quoteName("SCHEDULER_ID")+" = oh."+quoteName("SPOOLER_ID")+" ")
-					//.append("and mn."+quoteName("ORDER_END_TIME")+" is null ")
-					.append("where mn."+quoteName("ORDER_END_TIME")+" is null ")
-					.append("and mn."+quoteName("STEP")+" = osh."+quoteName("STEP"));
-					
-					result = session.createSQLQuery(sb.toString()).executeUpdate();
-				}*/
-				//Firebird kann nicht bzw. sehr umständlich in einem Update Tabelle mit join aktualisieren - kein extra Update
-						
 			}
 			
-			//Datenbankunabhängig
+			//Databaseindependent
 			if(!executed){
 				SOSHibernateResultSetProcessor notificationProcessor = new SOSHibernateResultSetProcessor(getConnection());
 				SOSHibernateResultSetProcessor historyProcessor = new SOSHibernateResultSetProcessor(getConnection());
@@ -571,6 +473,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 				}
 				
 				notificationCriteria.setReadOnly(true);
+				notificationCriteria = setLargeResultFetchSize(notificationCriteria);
 				
 				StringBuffer update = new StringBuffer("update "+DBITEM_SCHEDULER_MON_NOTIFICATIONS+" ")
 				.append("set taskEndTime = :taskEndTime ")
@@ -583,7 +486,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 				.append("where id = :id");
 							
 				try{
-					ResultSet notificationResultSet = notificationProcessor.createResultSet(notificationCriteria,ScrollMode.FORWARD_ONLY);
+					ResultSet notificationResultSet = notificationProcessor.createResultSet(notificationCriteria,ScrollMode.FORWARD_ONLY,largeResultFetchSize);
 					
 					int readCount = 0;
 					while (notificationResultSet.next() )
@@ -594,7 +497,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 						DBItemSchedulerMonNotifications notification = (DBItemSchedulerMonNotifications)notificationProcessor.get();
 						
 						Criteria historyCriteria = getSchedulerHistorySteps(notification.getOrderHistoryId(),notification.getStep());
-						ResultSet historyResultSet = historyProcessor.createResultSet(DBItemNotificationSchedulerHistoryOrderStep.class,historyCriteria,ScrollMode.FORWARD_ONLY);
+						ResultSet historyResultSet = historyProcessor.createResultSet(DBItemNotificationSchedulerHistoryOrderStep.class,historyCriteria,ScrollMode.FORWARD_ONLY,largeResultFetchSize);
 						try{
 							while(historyResultSet.next()){
 								DBItemNotificationSchedulerHistoryOrderStep osh =  (DBItemNotificationSchedulerHistoryOrderStep)historyProcessor.get();
@@ -638,46 +541,15 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 
-
 	/**
-	 * @TODO evtl. mit Join statt where wegen sybase umschreiben. 
-	 * auch evtl. für alle DB nur eine spalte im exists lesen
-	 * 
-	 *  
+	 * if SYBASE execution failed
+	 * (hibernate bug https://hibernate.atlassian.net/browse/HHH-5356) "cross join" 
+     * org.hibernate.dialect.SybaseASE15Dialect must be used
+     * 
 	 * @return
 	 * @throws Exception
 	 */
 	public int setOrderNotificationsRecovered() throws Exception {
-		//bei Sybase soll org.hibernate.dialect.SybaseASE15Dialect
-		//benutzt werden, sonst zB. SybaseDialect produziert Ausgabe 
-		//(hibernate bug https://hibernate.atlassian.net/browse/HHH-5356) "cross join" <- das wird nicht unterstützt
-		// ausserdem sybase liefert fehler wenn mehrere spalten in exists selectiert werden
-		/**
-		String select = "";
-		if(this.dialectClassName.toLowerCase().contains("sybase")){
-			select = " select osh.id.historyId ";
-		}
-				
-		StringBuffer sb = new StringBuffer("update "
-				+ DBITEM_SCHEDULER_MON_NOTIFICATIONS
-				+ " mn ")
-				.append("set mn.recovered = 1 ")
-				.append("where mn.error = 1 ")
-				.append(" and exists (")
-				.append(select+" from "
-						+ DBITEM_SCHEDULER_ORDER_STEP_HISTORY
-						+ " osh,")
-				.append("	" + DBITEM_SCHEDULER_ORDER_HISTORY
-						+ " oh")
-				.append("	where osh.id.historyId = oh.id.historyId")
-				.append("		and mn.schedulerId = oh.spoolerId")
-				.append("	    and mn.orderHistoryId = osh.id.historyId")
-				.append("		and mn.orderStepState = osh.state")
-				.append("		and mn.step <= osh.id.step")
-				.append("		and osh.error = 0")
-				.append("		and osh.endTime is not null")
-				.append(")");
-		*/
 		try{
 			StringBuffer sb = new StringBuffer("update "
 					+ DBITEM_SCHEDULER_MON_NOTIFICATIONS
@@ -704,12 +576,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 
-	/**
-	 * 
-	 * @param taskId
-	 * @return
-	 * @throws Exception 
-	 */
 	public SchedulerTaskHistoryDBItem getSchedulerHistory(Long taskId) throws Exception {
 		try{
 			StringBuffer sql = new StringBuffer("from "
@@ -719,6 +585,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 			
 			Query query = getConnection().createQuery(sql.toString());
 			query.setReadOnly(true);
+			query = setLargeResultFetchSize(query);
 			
 			query.setParameter("taskId", taskId);
 	
@@ -733,16 +600,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 			throw new Exception(SOSHibernateConnection.getException(ex));
 		}
 	}
-
-	/**
-	 * 
-	 * @param schedulerId
-	 * @param standalone
-	 * @param taskId
-	 * @param step
-	 * @param orderHistoryId
-	 * @return
-	 */
+	
 	public DBItemSchedulerMonNotifications getNotification(
 			String schedulerId, 
 			boolean standalone,
@@ -781,12 +639,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 
-	/**
-	 * 
-	 * @param id
-	 * @return
-	 * @throws Exception 
-	 */
 	public DBItemSchedulerMonNotifications getNotification(
 			Long id) throws Exception {
 		
@@ -813,14 +665,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 
-	/**
-	 * 
-	 * @param systemId
-	 * @param serviceName
-	 * @param notificationId
-	 * @return
-	 * @throws Exception
-	 */
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonSystemNotifications> getSystemNotifications(
 			String systemId,
@@ -848,17 +692,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	/**
-	 * 
-	 * @param systemId
-	 * @param serviceName
-	 * @param notificationId
-	 * @param checkId
-	 * @param stepFrom
-	 * @param stepTo
-	 * @return
-	 * @throws Exception
-	 */
 	public DBItemSchedulerMonSystemNotifications getSystemNotification(
 			String systemId,
 			String serviceName,
@@ -921,11 +754,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	/**
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
 	public DBItemNotificationSchedulerVariables getSchedulerVariable() throws Exception{
 		String method = "getSchedulerVariable";
 		
@@ -944,11 +772,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		return null;
 	}
 	
-	/**
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
 	public Date getLastNotificationDate(DBItemNotificationSchedulerVariables dbItem) throws Exception {
 
 		try{
@@ -974,13 +797,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 
-	/**
-	 * 
-	 * @param notificationId
-	 * @param name
-	 * @param value
-	 * @return
-	 */
 	public DBItemSchedulerMonResults createResult(
 			Long notificationId,
 			String name, 
@@ -996,11 +812,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		return dbItem;
 	}
 
-	/**
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonChecks> getChecksForNotifyTimer()
 			throws Exception {
@@ -1012,6 +823,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 			
 			Query q = getConnection().createQuery(sql.toString());
 			q.setReadOnly(true);
+			q = setLargeResultFetchSize(q);
 			
 			return executeQueryList(method,sql,q);
 		}
@@ -1020,12 +832,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	/**
-	 * 
-	 * @param notification
-	 * @return
-	 * @throws Exception
-	 */
 	public DBItemSchedulerMonNotifications getOrderLastStepErrorNotification(DBItemSchedulerMonNotifications notification) throws Exception{
 		
 		try{
@@ -1049,6 +855,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 			Query query = getConnection().createQuery(sql.toString());
 			query.setParameter("orderHistoryId",notification.getOrderHistoryId());
 			query.setReadOnly(true);
+			query = setLargeResultFetchSize(query);
 			
 			@SuppressWarnings("unchecked")
 			List<DBItemSchedulerMonNotifications> result = executeQueryList(method,sql,query);
@@ -1062,11 +869,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	/**
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonNotifications> getNotificationsForNotifyError()
 			throws Exception {
@@ -1085,6 +887,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 		
 			Query query = getConnection().createQuery(sql.toString());
 			query.setReadOnly(true);
+			query = setLargeResultFetchSize(query);
 			
 			return executeQueryList(method,sql,query);
 		}
@@ -1093,12 +896,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 
-	
-	/**
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonNotifications> getNotificationsForNotifyRecovered()
 			throws Exception {
@@ -1116,6 +913,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 	
 			Query query = getConnection().createQuery(sql.toString());
 			query.setReadOnly(true);
+			query = setLargeResultFetchSize(query);
 			
 			return executeQueryList(method,sql,query);
 		}
@@ -1124,13 +922,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	/**
-	 * 
-	 * @param notification
-	 * @param orderCompleted
-	 * @return
-	 * @throws Exception
-	 */
 	public DBItemSchedulerMonNotifications getOrderLastStep(DBItemSchedulerMonNotifications notification, boolean orderCompleted) throws Exception{
 		
 		try{
@@ -1156,6 +947,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 			Query query = getConnection().createQuery(sql.toString());
 			query.setParameter("orderHistoryId",notification.getOrderHistoryId());
 			query.setReadOnly(true);
+			query = setLargeResultFetchSize(query);
 			
 			@SuppressWarnings("unchecked")
 			List<DBItemSchedulerMonNotifications> result = executeQueryList(method,sql,query);
@@ -1169,10 +961,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	/**
-	 * 
-	 * @return
-	 */
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonNotifications> getNotificationsForNotifySuccess() throws Exception{
 		try{
@@ -1190,6 +978,8 @@ public class DBLayerSchedulerMon extends DBLayer{
 			
 			Query query = getConnection().createQuery(sql.toString());
 			query.setReadOnly(true);
+			query = setLargeResultFetchSize(query);
+			
 			return executeQueryList(method,sql,query);
 		}
 		catch(Exception ex){
@@ -1197,19 +987,11 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	/**
-	 * 
-	 * @param functionName
-	 * @param sql
-	 * @param q
-	 * @return
-	 * @throws Exception
-	 */
 	@SuppressWarnings("rawtypes")
 	private List executeQueryList(String functionName, StringBuffer sql, Query q) throws Exception{
 		List result = null;
 		try{
-			try{
+		    try{
 				result = q.list();
 			}
 			catch(Exception ex){
@@ -1233,12 +1015,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		return result;
 	}
 	
-	/**
-	 * 
-	 * @param orderHistoryId
-	 * @return
-	 * @throws Exception 
-	 */
 	@SuppressWarnings("unchecked")
 	public List<DBItemSchedulerMonNotifications> getOrderNotifications(Long orderHistoryId) throws Exception{
 		try{
@@ -1250,6 +1026,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 			
 			Query q = getConnection().createQuery(sql.toString());
 			q.setReadOnly(true);
+			q = setLargeResultFetchSize(q);
 			
 			q.setParameter("orderHistoryId",orderHistoryId);
 			
@@ -1260,12 +1037,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	/**
-	 * 
-	 * @param checkId
-	 * @return
-	 * @throws Exception
-	 */
 	public int removeCheck(Long checkId) throws Exception{
 		try{
 			StringBuffer sql = new StringBuffer("delete "+DBITEM_SCHEDULER_MON_CHECKS+" ")
@@ -1281,16 +1052,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
-	/**
-	 * 
-	 * @param name
-	 * @param notificationId
-	 * @param stepFrom
-	 * @param stepTo
-	 * @param stepFromStartTime
-	 * @param stepToEndTime
-	 * @return
-	 */
 	public DBItemSchedulerMonChecks createCheck(String name,
 			DBItemSchedulerMonNotifications notification,
 			String stepFrom,
@@ -1321,22 +1082,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		return item;
 	}
 	
-	/**
-	 * 
-	 * @param systemId
-	 * @param serviceName
-	 * @param notificationId
-	 * @param checkId
-	 * @param stepFrom
-	 * @param stepTo
-	 * @param stepFromStartTime
-	 * @param stepToEndTime
-	 * @param notifications
-	 * @param acknowledged
-	 * @param recovered
-	 * @param success
-	 * @return
-	 */
 	public DBItemSchedulerMonSystemNotifications createSystemNotification(
 			String systemId,
 			String serviceName,
@@ -1372,33 +1117,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		return dbItem;
 	}
 
-	/**
-	 * 
-	 * @param schedulerId
-	 * @param standalone
-	 * @param taskId
-	 * @param step
-	 * @param orderHistoryId
-	 * @param jobChainName
-	 * @param jobChainTitle
-	 * @param orderId
-	 * @param orderTitle
-	 * @param orderStartTime
-	 * @param orderEndTime
-	 * @param orderStepState
-	 * @param orderStepStartTime
-	 * @param orderStepEndTime
-	 * @param jobName
-	 * @param jobTitle
-	 * @param taskStartTime
-	 * @param taskEndTime
-	 * @param recovered
-	 * @param error
-	 * @param errorCode
-	 * @param errorText
-	 * @return
-	 * @throws Exception
-	 */
 	public DBItemSchedulerMonNotifications createNotification(
 			String schedulerId, 
 			boolean standalone,
@@ -1457,13 +1175,6 @@ public class DBLayerSchedulerMon extends DBLayer{
 		return dbItem;
 	}
 
-	
-	/**
-	 * 
-	 * @param dbItem
-	 * @param date
-	 * @throws Exception
-	 */
 	public void setLastNotificationDate(DBItemNotificationSchedulerVariables dbItem,Date date) throws Exception {
 		try{
 			if(dbItem == null){
@@ -1482,4 +1193,28 @@ public class DBLayerSchedulerMon extends DBLayer{
 		}
 	}
 	
+	private Query setLargeResultFetchSize(Query q){
+	    if(largeResultFetchSize.isPresent()){
+	        // use default value if fetchSize != null. for example Oracle = 10
+            // accept negative values. for example MySQL Integer.MIN_VALUE
+            // -2147483648
+            if (largeResultFetchSize.get() != 0) {
+                q.setFetchSize(largeResultFetchSize.get());
+            }
+        }
+	    return q;
+	}
+	
+	private Criteria setLargeResultFetchSize(Criteria cr){
+        if(largeResultFetchSize.isPresent()){
+            if(largeResultFetchSize.get() != 0){
+                cr.setFetchSize(largeResultFetchSize.get());
+            }
+        }
+        return cr;
+    }
+	
+	public Optional<Integer> getLargeResultFetchSize(){
+	    return this.largeResultFetchSize;
+	}
 }

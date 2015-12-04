@@ -15,18 +15,10 @@ public class SystemNotifierModelTest {
 	private SOSHibernateConnection connection;
 	private SystemNotifierJobOptions options;
 	
-	/**
-	 * 
-	 * @param opt
-	 */
 	public SystemNotifierModelTest(SystemNotifierJobOptions opt){
 		options = opt;
 	}
 	
-	/**
-	 * 
-	 * @throws Exception
-	 */
 	public void init() throws Exception {
 		connection = new SOSHibernateConnection(options.hibernate_configuration_file.Value());
 		connection.setAutoCommit(options.connection_autocommit.value());
@@ -37,22 +29,14 @@ public class SystemNotifierModelTest {
 		connection.connect();
 	}
 
-	/**
-	 * 
-	 */
 	public void exit() {
 		if (connection != null) {
 			connection.disconnect();
 		}
 	}
 
-	/**
-	 * 
-	 * @param args
-	 * @throws Exception
-	 */
 	public static void main(String[] args) throws Exception {
-		String config = "D:/Arbeit/scheduler/jobscheduler_data/re-dell_4646_snap_1_8/config";
+		String config = "D:/scheduler/config";
 		
 		SystemNotifierJobOptions opt = new SystemNotifierJobOptions();
 		opt.hibernate_configuration_file.Value(config+"/hibernate.cfg.xml");
