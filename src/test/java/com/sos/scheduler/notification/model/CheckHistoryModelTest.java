@@ -13,18 +13,10 @@ public class CheckHistoryModelTest {
 	private SOSHibernateConnection connection;
 	private CheckHistoryJobOptions options;
 	
-	/**
-	 * 
-	 * @param opt
-	 */
 	public CheckHistoryModelTest(CheckHistoryJobOptions opt){
 		options = opt;
 	}
 	
-	/**
-	 * 
-	 * @throws Exception
-	 */
 	public void init() throws Exception {
 		connection = new SOSHibernateConnection(options.hibernate_configuration_file.Value());
 		connection.setAutoCommit(options.connection_autocommit.value());
@@ -36,22 +28,14 @@ public class CheckHistoryModelTest {
 		connection.connect();
 	}
 
-	/**
-	 * 
-	 */
 	public void exit() {
 		if (connection != null) {
 			connection.disconnect();
 		}
 	}
 
-	/**
-	 * 
-	 * @param args
-	 * @throws Exception
-	 */
 	public static void main(String[] args) throws Exception {
-		String config = "D:/Arbeit/scheduler/jobscheduler/re-dell_4646_snap_1_9_build130/scheduler_data/config";
+		String config = "D:/scheduler/config";
 		
 		CheckHistoryJobOptions opt = new CheckHistoryJobOptions();
 		opt.hibernate_configuration_file.Value(config+"/hibernate.cfg.xml");

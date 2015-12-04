@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.hibernate.Criteria;
@@ -39,11 +40,6 @@ import com.sos.scheduler.notification.model.INotificationModel;
 import com.sos.scheduler.notification.model.NotificationModel;
 import com.sos.scheduler.notification.plugins.history.ICheckHistoryPlugin;
 
-/**
- * 
- * @author Robert Ehrlich
- * 
- */
 public class CheckHistoryModel extends NotificationModel implements INotificationModel {
 
 	final Logger logger = LoggerFactory.getLogger(CheckHistoryModel.class);
@@ -55,16 +51,10 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 	private List<ICheckHistoryPlugin> plugins = null;
 	private CounterCheckHistory counter;
 	
-	/**
-	 * 
-	 */
 	public CheckHistoryModel(SOSHibernateConnection conn,
 			CheckHistoryJobOptions opt) throws Exception{
 		
-		super(conn);
-		if (opt == null) {
-			throw new Exception("CheckHistoryJobOptions is NULL");
-		}
+		super(conn,Optional.of(opt.large_result_fetch_size.Value()));
 		options = opt;
 		
 		initConfig();
@@ -72,18 +62,10 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 		pluginsOnInit(timers,options,getDbLayer());
 	}
 
-	/**
-	 * 
-	 */
 	private void initCounters(){
 		counter = new CounterCheckHistory();
 	}
 
-
-	/**
-	 * 
-	 * @throws Exception
-	 */
 	public void initConfig() throws Exception {
 		plugins = new ArrayList<ICheckHistoryPlugin>();
 		timers = new LinkedHashMap<String, ElementTimer>();
@@ -115,11 +97,6 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 		readConfigFiles(dir);
 	}
 
-	/**
-	 * 
-	 * @param dir
-	 * @throws Exception
-	 */
 	private void readConfigFiles(File dir) throws Exception {
 		String method = "readConfigFiles";
 		
@@ -153,11 +130,6 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 		
 	}
 
-	/**
-	 * 
-	 * @param xpath
-	 * @throws Exception
-	 */
 	private void setConfigTimers(SOSXMLXPath xpath) throws Exception{
 		NodeList nlTimers = NotificationXmlHelper.selectTimerDefinitions(xpath);
 		for (int j = 0; j < nlTimers.getLength(); j++) {
@@ -169,11 +141,6 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 		}
 	}
 	
-	/**
-	 * 
-	 * @param xpath
-	 * @throws Exception
-	 */
 	private void setConfigAllJobChains(SOSXMLXPath xpath) throws Exception{
 		NodeList notificationJobChains = NotificationXmlHelper.selectNotificationJobChainDefinitions(xpath);
 		
@@ -184,14 +151,7 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 		}
 	}
 	
-	/**
-	 * 
-	 * @param xpath
-	 * @param nlJobChains
-	 * @throws Exception
-	 */
 	private void setConfigJobChains(SOSXMLXPath xpath,NodeList nlJobChains) throws Exception{
-		//@TODO jobChains Definitions auch von timers lesen
 		for (int j = 0; j < nlJobChains.getLength(); j++) {
 			Element jobChain = (Element)nlJobChains.item(j);
 			
@@ -220,18 +180,9 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 		}
 	}
 	
-
-	/**
-	 * @TODO eventuell einen Fleck für insertTimer setzen, 
-	 * damit nicht noch mal die Timers geprüft werden
-	 * 
-	 * @param order
-	 * @return
-	 * @throws Exception
-	 */
 	private boolean checkInsertNotification(CounterCheckHistory counter, DBItemNotificationSchedulerHistoryOrderStep step) throws Exception{
 		
-		//Indent für die Ausgabe
+		//Indent for the output
 		String method = "  checkInsertNotification";
 		logger.debug(String.format("%s: %s) checkInsertNotifications = %s",
 				method,
@@ -302,16 +253,9 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 			}
 		}
 		
-		
 	return false;
 	}
 	
-	/**
-	 * 
-	 * @param dateTo
-	 * @return
-	 * @throws Exception
-	 */
 	private Date getLastNotificationDate(DBItemNotificationSchedulerVariables dbItem, Date dateTo) throws Exception{
 		Date dateFrom = getDbLayer().getLastNotificationDate(dbItem);
 		int maxAge = NotificationModel.resolveAge2Minutes(options.max_history_age.Value());
@@ -330,10 +274,6 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 		return dateFrom;
 	}
 	
-	/**
-	 * 
-	 * @throws Exception
-	 */
 	private void updateExistingNotifications() throws Exception{
 		String method = "updateExistingNotifications";
 	
@@ -359,10 +299,6 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 		getDbLayer().getConnection().commit();
 	}
 	
-	/**
-	 * 
-	 * @throws Exception
-	 */
 	@Override
 	public void process() throws Exception {
 		String method = "process";
@@ -393,7 +329,7 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 			
 			getDbLayer().getConnection().beginTransaction();
 			criteria = getDbLayer().getSchedulerHistorySteps(dateFrom, dateTo);
-			ResultSet rsHistory = rspHistory.createResultSet(DBItemNotificationSchedulerHistoryOrderStep.class,criteria,ScrollMode.FORWARD_ONLY);
+			ResultSet rsHistory = rspHistory.createResultSet(DBItemNotificationSchedulerHistoryOrderStep.class,criteria,ScrollMode.FORWARD_ONLY,getDbLayer().getLargeResultFetchSize());
 			while (rsHistory.next()) {
 				counter.addTotal();
 				
