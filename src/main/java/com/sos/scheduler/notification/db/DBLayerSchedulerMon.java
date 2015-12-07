@@ -400,7 +400,7 @@ public class DBLayerSchedulerMon extends DBLayer{
 					.append("oh.END_TIME")
 					.append(",h.END_TIME")
 					.append(",osh.END_TIME")
-					.append(",osh.ERROR")
+					.append(",nvl(osh.ERROR,0)")
 					.append(",osh.ERROR_CODE")
 					.append(",osh.ERROR_TEXT ")
 					.append("from " + TABLE_SCHEDULER_ORDER_HISTORY + " oh ")
@@ -411,7 +411,24 @@ public class DBLayerSchedulerMon extends DBLayer{
 					.append("where oh.HISTORY_ID = mn.ORDER_HISTORY_ID ")
 					.append("and osh.STEP = mn.STEP ")
 					.append(") ")
-					.append("where mn.ORDER_END_TIME is null");
+					.append("where mn.ORDER_END_TIME is null ")
+					.append("and exists(")
+					.append("select ")
+                    .append("oh.END_TIME")
+                    .append(",h.END_TIME")
+                    .append(",osh.END_TIME")
+                    .append(",nvl(osh.ERROR,0)")
+                    .append(",osh.ERROR_CODE")
+                    .append(",osh.ERROR_TEXT ")
+                    .append("from " + TABLE_SCHEDULER_ORDER_HISTORY + " oh ")
+                    .append("inner join " + TABLE_SCHEDULER_ORDER_STEP_HISTORY + " osh ")
+                    .append("on osh.HISTORY_ID = oh.HISTORY_ID ")
+                    .append("inner join " + TABLE_SCHEDULER_HISTORY + " h ")
+                    .append("on h.ID = osh.TASK_ID ")
+                    .append("where oh.HISTORY_ID = mn.ORDER_HISTORY_ID ")
+                    .append("and osh.STEP = mn.STEP ")
+                    .append(") ");
+                    
 					 result = getConnection().createSQLQuery(sb.toString()).executeUpdate();
 				}
 				else if(dbms.equals(Dbms.MYSQL)){
