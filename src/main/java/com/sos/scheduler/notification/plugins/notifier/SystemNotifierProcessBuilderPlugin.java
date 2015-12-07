@@ -101,30 +101,53 @@ public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
             }
 			
 			if(exitCode > 0){
-				Scanner s = new Scanner(p.getInputStream());
-				StringBuffer msg = new StringBuffer();
-				while(s.hasNext()) { 
-					String m = s.next();
-					if(m.trim().length() > 0){
-						msg.append(m.trim());
-						msg.append(" ");
-					}
-				}
-				s.close();
+			    StringBuffer inputStream = new StringBuffer();
+			    StringBuffer errorStream = new StringBuffer();
+                
+			    Scanner s = null;
+			    try{
+			        s = new Scanner(p.getInputStream());
+			        while(s.hasNext()) { 
+			            String m = s.next();
+			            if(m.trim().length() > 0){
+			                inputStream.append(m.trim());
+			                inputStream.append(" ");
+			            }
+			        }
+			    }
+			    catch(Exception ex){
+			        logger.warn(String.format("error reading process input stream = %s",ex.toString()));
+		        }
+			    finally{
+			        if(s != null){
+			            try{s.close();}catch(Exception ex){}
+			        }
+			    }
+			    try{
+                    s = new Scanner(p.getErrorStream());
+			        while(s.hasNext()) { 
+			            String m = s.next();
+			            if(m.trim().length() > 0){
+			                errorStream.append(m.trim());
+			                errorStream.append(" ");
+			            }
+			        }
+			    }
+			    catch(Exception ex){
+			        logger.warn(String.format("error reading process error stream = %s",ex.toString())); 
+			    }
+			    finally{
+			        if(s != null){
+                        try{s.close();}catch(Exception ex){}
+                    }
+			    }
 				
-				s = new Scanner(p.getErrorStream());
-				while(s.hasNext()) { 
-					String m = s.next();
-					if(m.trim().length() > 0){
-						msg.append(m.trim());
-						msg.append(" ");
-					}
-				}
-				s.close();
-				
-				if(msg.length() > 0){
-					throw new Exception(msg.toString());
-				}
+				if(inputStream.length() > 0 || errorStream.length() > 0){
+				    throw new Exception(String.format("command executed with exitCode = %s, input stream = %s, error stream = %s",
+				            exitCode,
+				            inputStream.toString(),
+				            errorStream.toString()));
+	     		}
 			}
 			
 			logger.info(String.format("command executed with exitCode= %s",exitCode));
