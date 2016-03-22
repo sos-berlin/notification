@@ -12,13 +12,13 @@ import sos.xml.SOSXMLXPath;
 public class NotificationXmlHelper {
 
 	public static String getSystemMonitorNotificationSystemId(SOSXMLXPath xpath) throws Exception{
-		if(xpath.root == null){
+		if(xpath.getRoot() == null){
 			throw new Exception("xpath.root is NULL");
 		}
-		if(!xpath.root.getNodeName().equalsIgnoreCase("SystemMonitorNotification")){
-			throw new Exception(String.format("root is %s and not the SystemMonitorNotification Element",xpath.root.getNodeName()));
+		if(!xpath.getRoot().getNodeName().equalsIgnoreCase("SystemMonitorNotification")){
+			throw new Exception(String.format("root is %s and not the SystemMonitorNotification Element",xpath.getRoot().getNodeName()));
 		}
-		return xpath.root.getAttribute("system_id");
+		return xpath.getRoot().getAttribute("system_id");
 	}
 	
 	public static NodeList selectNotificationJobChainDefinitions(SOSXMLXPath xpath) throws Exception{
