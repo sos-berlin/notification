@@ -74,13 +74,9 @@ public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
 			resolveCommandServiceNameVar(systemNotification.getServiceName());
 			resolveCommandServiceStatusVar(serviceStatus);
 			resolveCommandServiceMessagePrefixVar(servicePrefix);
-			resolveCommandAllEnvVars();
 					
 			ProcessBuilder pb = new ProcessBuilder();
 			pb.command(createProcessBuilderCommand(getCommand()));
-			
-			logger.info(String.format("command configured = %s",getCommand()));
-			logger.info(String.format("command to execute = %s",pb.command()));
 						
 			//Process ENV Variables setzen
 			Map<String,String> env = pb.environment();
@@ -94,12 +90,15 @@ public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
 							normalizeVarValue(entry.getValue()));
 				}
 			}
-						
+			
+			logger.info(String.format("command resolved = %s",resolveEnvVars(env,getCommand())));
+            logger.info(String.format("command to execute = %s",pb.command()));
+            			
 			p = pb.start();
 			if (p.waitFor() != 0) {
 		    	exitCode = p.exitValue();
-            }
-			
+		    }
+		 	
 			if(exitCode > 0){
 			    StringBuffer inputStream = new StringBuffer();
 			    StringBuffer errorStream = new StringBuffer();
@@ -164,18 +163,9 @@ public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
 		}
 	}
 	
-	private boolean isWindows(){
-		try{
-			return System.getProperty("os.name").toLowerCase().contains("windows");
-		}
-		catch(Exception x){
-			return false;
-		}
-	}
 
 	private String[] createProcessBuilderCommand(String command){
 		String[] c = new String[3];
-		//if(OperatingSystem.isWindows){
 		if(this.isWindows()){
 			String executable = System.getenv("comspec");
 			if(SOSString.isEmpty(executable)){

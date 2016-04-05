@@ -24,8 +24,7 @@ public class NotificationModel {
 
     public static final String OPERATION_ACKNOWLEDGE = "acknowledge";
     public static final String OPERATION_RESET_SERVICES = "reset_services";
-    public static final Long IDENTIFIER_NOTIFICATION_NOT_SEND = new Long(10000);
-
+   
     public enum NotificationType {
         ERROR, SUCCESS, RECOVERY, CHECK
     }
