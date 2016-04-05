@@ -30,10 +30,9 @@ public class CleanupNotificationsModelTest {
     }
 
     public static void main(String[] args) throws Exception {
-        String config = "D:/scheduler/config";
-
+       
         CleanupNotificationsJobOptions opt = new CleanupNotificationsJobOptions();
-        opt.hibernate_configuration_file.Value(config + "/hibernate_reporting.cfg.xml");
+        opt.hibernate_configuration_file.Value(Config.HIBERNATE_CONFIGURATION_FILE);
 
         CleanupNotificationsModelTest t = new CleanupNotificationsModelTest(opt);
 
