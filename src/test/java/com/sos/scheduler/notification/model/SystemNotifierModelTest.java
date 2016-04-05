@@ -40,21 +40,7 @@ public class SystemNotifierModelTest {
 	}
 
 	public static void main(String[] args) throws Exception {
-	    //BasicConfigurator.resetConfiguration();
 	    
-	    //System.setProperty("log4j","D:/Arbeit/projects/git.release.1.9/all/notification/target/test-classes/log4j.properties");
-	    /**
-	    Logger.getLogger("org.hibernate").setLevel(Level.OFF);
-        Logger.getLogger("org.hibernate.jdbc").setLevel(Level.OFF);
-        Logger.getLogger("org.hibernate.loader").setLevel(Level.OFF);
-        */
-        /**
-        List<Logger> loggers = Collections.<Logger>list(LogManager.getCurrentLoggers());
-        loggers.add(LogManager.getRootLogger());
-        for ( Logger logger : loggers ) {
-            logger.setLevel(Level.OFF);
-        }*/
-        
 	    SystemNotifierJobOptions opt = new SystemNotifierJobOptions();
 		opt.hibernate_configuration_file.Value(Config.HIBERNATE_CONFIGURATION_FILE);
 		opt.schema_configuration_file.Value(Config.SCHEMA_CONFIGURATION_FILE);
