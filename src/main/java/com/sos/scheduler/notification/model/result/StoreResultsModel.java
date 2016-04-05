@@ -19,11 +19,10 @@ import com.sos.scheduler.notification.model.NotificationModel;
 
 public class StoreResultsModel extends NotificationModel implements INotificationModel {
 
-    final Logger logger = LoggerFactory.getLogger(StoreResultsModel.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(StoreResultsModel.class);
     private StoreResultsJobOptions options;
 
     public StoreResultsModel(SOSHibernateConnection conn, StoreResultsJobOptions opt) throws Exception {
-
         super(conn);
         options = opt;
     }
@@ -31,9 +30,7 @@ public class StoreResultsModel extends NotificationModel implements INotificatio
     @Override
     public void process() throws Exception {
         ArrayList<String> resultParamsAsList = getResultParamsAsArrayList(options.scheduler_notification_result_parameters.Value());
-
-        boolean hasResultParams = resultParamsAsList.size() > 0;
-
+        boolean hasResultParams = !resultParamsAsList.isEmpty();
         HashMap<String, String> hm = options.Settings();
         HashMap<String, String> hmInsert = new HashMap<String, String>();
         if (hm != null) {
@@ -43,48 +40,40 @@ public class StoreResultsModel extends NotificationModel implements INotificatio
                 }
             }
         }
-
-        logger.info(String.format("inserting %s params ", hmInsert.size()));
-
-        if (hmInsert.size() > 0) {
+        LOGGER.info(String.format("inserting %s params ", hmInsert.size()));
+        if (!hmInsert.isEmpty()) {
             try {
                 getDbLayer().getConnection().beginTransaction();
-
                 DBItemSchedulerMonNotifications n = getNotification();
                 for (String name : hmInsert.keySet()) {
                     insertParam(n.getId(), name, hmInsert.get(name));
                 }
-
                 getDbLayer().getConnection().commit();
             } catch (Exception ex) {
                 try {
                     getDbLayer().getConnection().rollback();
                 } catch (Exception x) {
+                    // no exception handling for rollback
                 }
                 throw ex;
             }
-
         }
-
     }
 
     private DBItemSchedulerMonNotifications getNotification() throws Exception {
         String method = "getNotification";
-
         DBItemSchedulerMonNotifications tmp = new DBItemSchedulerMonNotifications();
-
         tmp.setSchedulerId(options.mon_results_scheduler_id.Value());
         tmp.setStandalone(options.mon_results_standalone.value());
         tmp.setTaskId(new Long(options.mon_results_task_id.value()));
         tmp.setOrderStepState(options.mon_results_order_step_state.Value());
-
         tmp.setJobChainName(options.mon_results_job_chain_name.Value());
         tmp.setOrderId(options.mon_results_order_id.Value());
-
         if (tmp.getStandalone()) {
             SchedulerTaskHistoryDBItem h = getDbLayer().getSchedulerHistory(tmp.getTaskId());
             if (h != null) {
                 tmp.setStep(new Long(h.getSteps()));
+                tmp.setReturnCode(new Long(h.getExitCode() == null ? 0 : h.getExitCode()));
                 tmp.setJobName(h.getJobName());
                 tmp.setTaskStartTime(h.getStartTime());
                 tmp.setTaskEndTime(h.getEndTime());
@@ -93,58 +82,46 @@ public class StoreResultsModel extends NotificationModel implements INotificatio
                 tmp.setErrorText(h.getErrorText());
             }
         } else {
-            logger.debug(String.format("%s: getNotFinishedOrderStepHistory: schedulerId = %s, taskId = %s, orderStepState = %s, jobChainName = %s, orderId = %s", method, tmp.getSchedulerId(), tmp.getTaskId(), tmp.getOrderStepState(), tmp.getJobChainName(), tmp.getOrderId()));
-
-            DBItemNotificationSchedulerHistoryOrderStep os = getDbLayer().getNotFinishedOrderStepHistory(null,tmp.getSchedulerId(), tmp.getTaskId(), tmp.getOrderStepState(), tmp.getJobChainName(), tmp.getOrderId());
-
+            LOGGER.debug(String.format("%s: getNotFinishedOrderStepHistory: schedulerId = %s, taskId = %s, orderStepState = %s, jobChainName = %s, orderId = %s", method, tmp.getSchedulerId(), tmp.getTaskId(), tmp.getOrderStepState(), tmp.getJobChainName(), tmp.getOrderId()));
+            DBItemNotificationSchedulerHistoryOrderStep os = getDbLayer().getNotFinishedOrderStepHistory(null, tmp.getSchedulerId(), tmp.getTaskId(), tmp.getOrderStepState(), tmp.getJobChainName(), tmp.getOrderId());
             if (os == null) {
-                logger.debug(String.format("%s: getNotFinishedOrderStepHistory not found for: schedulerId = %s, taskId = %s, orderStepState = %s, jobChainName = %s, orderId = %s", method, tmp.getSchedulerId(), tmp.getTaskId(), tmp.getOrderStepState(), tmp.getJobChainName(), tmp.getOrderId()));
+                LOGGER.debug(String.format("%s: getNotFinishedOrderStepHistory not found for: schedulerId = %s, taskId = %s, orderStepState = %s, jobChainName = %s,"
+                        + " orderId = %s", method, tmp.getSchedulerId(), tmp.getTaskId(), tmp.getOrderStepState(), tmp.getJobChainName(), tmp.getOrderId()));
             } else {
                 if (os.getStepStep() == null) {
                     throw new Exception(String.format("order step history not found for order history id = %s", os.getOrderHistoryId()));
                 }
-
                 if (os.getTaskId() == null) {
                     throw new Exception(String.format("task history not found for order history id = %s", os.getOrderHistoryId()));
                 }
-
                 tmp.setStep(os.getStepStep());
                 tmp.setOrderHistoryId(os.getOrderHistoryId());
-
                 tmp.setOrderStartTime(os.getOrderStartTime());
                 tmp.setOrderEndTime(os.getOrderEndTime());
                 tmp.setOrderStepStartTime(os.getStepStartTime());
                 tmp.setOrderStepEndTime(os.getStepEndTime());
-
                 tmp.setJobName(os.getTaskJobName());
                 tmp.setTaskStartTime(os.getTaskStartTime());
                 tmp.setTaskEndTime(os.getTaskEndTime());
-
+                tmp.setReturnCode(os.getTaskExitCode());
                 tmp.setError(os.getStepError());
                 tmp.setErrorCode(os.getStepErrorCode());
                 tmp.setErrorText(os.getStepErrorText());
             }
         }
-
         DBItemSchedulerMonNotifications dbItem = getDbLayer().getNotification(tmp.getSchedulerId(), tmp.getStandalone(), tmp.getTaskId(), tmp.getStep(), tmp.getOrderHistoryId());
-
         if (dbItem == null) {
-            dbItem = getDbLayer().createNotification(tmp.getSchedulerId(), tmp.getStandalone(), tmp.getTaskId(), tmp.getStep(), tmp.getOrderHistoryId(), tmp.getJobChainName(), tmp.getJobChainName(), tmp.getOrderId(), tmp.getOrderId(), tmp.getOrderStartTime(), tmp.getOrderEndTime(), tmp.getOrderStepState(), tmp.getOrderStepStartTime(), tmp.getOrderStepEndTime(), tmp.getJobName(), tmp.getJobName(), tmp.getTaskStartTime(), tmp.getTaskEndTime(), tmp.getError(), tmp.getError(), tmp.getErrorCode(), tmp.getErrorText());
-
-            logger.debug(String.format("create new notification: schedulerId = %s, standalone = %s, taskId = %s, historyId = %s, stepState = %s", tmp.getSchedulerId(), tmp.isStandalone(), tmp.getTaskId(), tmp.getOrderHistoryId(), tmp.getOrderStepState()));
-
+            dbItem = getDbLayer().createNotification(tmp.getSchedulerId(), tmp.getStandalone(), tmp.getTaskId(), tmp.getStep(), tmp.getOrderHistoryId(), tmp.getJobChainName(), tmp.getJobChainName(), tmp.getOrderId(), tmp.getOrderId(), tmp.getOrderStartTime(), tmp.getOrderEndTime(), tmp.getOrderStepState(), tmp.getOrderStepStartTime(), tmp.getOrderStepEndTime(), tmp.getJobName(), tmp.getJobName(), tmp.getTaskStartTime(), tmp.getTaskEndTime(),tmp.getError(),tmp.getReturnCode(), tmp.getError(), tmp.getErrorCode(), tmp.getErrorText());
+            LOGGER.debug(String.format("create new notification: schedulerId = %s, standalone = %s, taskId = %s, historyId = %s, stepState = %s", tmp.getSchedulerId(), tmp.isStandalone(), tmp.getTaskId(), tmp.getOrderHistoryId(), tmp.getOrderStepState()));
             getDbLayer().getConnection().save(dbItem);
         }
-
         return dbItem;
     }
 
     private DBItemSchedulerMonResults insertParam(Long notificationId, String name, String value) throws Exception {
-        logger.debug(String.format("create new result: notificationId = %s, name = %s, value = %s", notificationId, name, value));
-
+        LOGGER.debug(String.format("create new result: notificationId = %s, name = %s, value = %s", notificationId, name, value));
         DBItemSchedulerMonResults dbItem = getDbLayer().createResult(notificationId, name, value);
         getDbLayer().getConnection().save(dbItem);
-
         return dbItem;
     }
 
@@ -154,11 +131,12 @@ public class StoreResultsModel extends NotificationModel implements INotificatio
             String[] arr = params.split(";");
             for (int i = 0; i < arr.length; i++) {
                 String val = arr[i].trim();
-                if (val.length() > 0) {
+                if (!val.isEmpty()) {
                     list.add(val);
                 }
             }
         }
         return list;
     }
+
 }

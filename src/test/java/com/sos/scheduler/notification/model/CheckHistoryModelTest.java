@@ -35,13 +35,12 @@ public class CheckHistoryModelTest {
 	}
 
 	public static void main(String[] args) throws Exception {
-		String config = "D:/scheduler/config";
 		
 		CheckHistoryJobOptions opt = new CheckHistoryJobOptions();
-		opt.hibernate_configuration_file.Value(config+"/hibernate.cfg.xml");
-		opt.schema_configuration_file.Value(config+"/notification/SystemMonitorNotification_MonitorSystem.xml");
+		opt.hibernate_configuration_file.Value(Config.HIBERNATE_CONFIGURATION_FILE);
+		opt.schema_configuration_file.Value(Config.SCHEMA_CONFIGURATION_FILE);
 		opt.allow_db_dependent_queries.value(true);
-		opt.max_history_age.Value("365d");
+		opt.max_history_age.Value("1d");
 		opt.batch_size.value(1000000);
 		opt.plugins.Value("com.sos.scheduler.notification.plugins.history.CheckHistoryTimerPlugin");
 		

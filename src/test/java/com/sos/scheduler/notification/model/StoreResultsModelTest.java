@@ -35,10 +35,9 @@ public class StoreResultsModelTest {
 	}
 
 	public static void main(String[] args) throws Exception {
-		String config = "D:/scheduler/config";
 		
 		StoreResultsJobOptions opt = new StoreResultsJobOptions();
-		opt.scheduler_notification_hibernate_configuration_file.Value(config+"/hibernate.cfg.xml");
+		opt.scheduler_notification_hibernate_configuration_file.Value(Config.HIBERNATE_CONFIGURATION_FILE);
 		
 		opt.mon_results_scheduler_id.Value("my_scheduler_id");
 		opt.mon_results_task_id.value(17600149);
