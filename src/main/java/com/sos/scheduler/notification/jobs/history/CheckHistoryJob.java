@@ -45,7 +45,7 @@ public class CheckHistoryJob extends JSJobUtilitiesClass<CheckHistoryJobOptions>
 		logger.debug(methodName);
 
 		try { 
-			getOptions().CheckMandatory();
+			getOptions().checkMandatory();
 			logger.debug(getOptions().toString());
 			
 			CheckHistoryModel model = new CheckHistoryModel(connection,getOptions());

@@ -44,7 +44,7 @@ public class CleanupNotificationsJob extends JSJobUtilitiesClass<CleanupNotifica
 		logger.debug(methodName);
 
 		try { 
-			getOptions().CheckMandatory();
+			getOptions().checkMandatory();
 			logger.debug(getOptions().toString());
 			
 			CleanupNotificationsModel model = new CleanupNotificationsModel(connection,getOptions());
