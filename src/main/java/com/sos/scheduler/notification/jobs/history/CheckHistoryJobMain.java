@@ -18,7 +18,7 @@ public class CheckHistoryJobMain extends JSToolBox {
 		CheckHistoryJob job = new CheckHistoryJob();
 		try {
 			CheckHistoryJobOptions options = job.getOptions();
-			options.CommandLineArgs(args);
+			options.commandLineArgs(args);
 			
 			job.init();
 			job.execute();

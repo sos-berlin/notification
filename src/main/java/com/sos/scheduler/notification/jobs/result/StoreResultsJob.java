@@ -44,7 +44,7 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 		
 		logger.debug(methodName);
 		try { 
-			getOptions().CheckMandatory();
+			getOptions().checkMandatory();
 			logger.debug(getOptions().toString());
 			
 			StoreResultsModel model = new StoreResultsModel(connection,getOptions());

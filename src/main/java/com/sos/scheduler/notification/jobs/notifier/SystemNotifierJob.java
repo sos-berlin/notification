@@ -49,7 +49,7 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 		logger.debug(methodName);
 
 		try { 
-			getOptions().CheckMandatory();
+			getOptions().checkMandatory();
 			logger.debug(getOptions().toString());
 			
 			SystemNotifierModel model = new SystemNotifierModel(connection,getOptions(),spooler);

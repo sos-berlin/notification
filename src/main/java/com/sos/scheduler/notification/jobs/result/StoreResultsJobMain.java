@@ -17,7 +17,7 @@ public class StoreResultsJobMain extends JSToolBox {
 		StoreResultsJob job = new StoreResultsJob();
 		try {
 			StoreResultsJobOptions options = job.getOptions();
-			options.CommandLineArgs(args);
+			options.commandLineArgs(args);
 			
 			job.init();
 			job.execute();	

@@ -46,7 +46,7 @@ public class ResetNotificationsJob extends JSJobUtilitiesClass<ResetNotification
         LOGGER.debug(methodName);
 
         try {
-            getOptions().CheckMandatory();
+            getOptions().checkMandatory();
             LOGGER.debug(getOptions().toString());
 
             ResetNotificationsModel model = new ResetNotificationsModel(connection, getOptions());

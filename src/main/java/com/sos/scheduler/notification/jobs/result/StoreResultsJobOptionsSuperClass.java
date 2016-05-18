@@ -218,17 +218,17 @@ public class StoreResultsJobOptionsSuperClass extends JSOptionsClass {
     }
 
     @Override
-    public void CheckMandatory() throws JSExceptionMandatoryOptionMissing, Exception {
+    public void checkMandatory() throws JSExceptionMandatoryOptionMissing, Exception {
         try {
-            super.CheckMandatory();
+            super.checkMandatory();
         } catch (Exception e) {
             throw new JSExceptionMandatoryOptionMissing(e.toString());
         }
     }
 
     @Override
-    public void CommandLineArgs(String[] args) {
-        super.CommandLineArgs(args);
+    public void commandLineArgs(String[] args) {
+        super.commandLineArgs(args);
         this.setAllOptions(super.objSettings);
     }
 }
