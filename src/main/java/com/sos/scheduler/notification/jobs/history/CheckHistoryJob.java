@@ -18,7 +18,7 @@ public class CheckHistoryJob extends JSJobUtilitiesClass<CheckHistoryJobOptions>
 
 	public void init() throws Exception {
 		try{
-			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.Value());
+			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.getValue());
 			connection.setAutoCommit(getOptions().connection_autocommit.value());
 			connection.setIgnoreAutoCommitTransactions(true);
 			connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());

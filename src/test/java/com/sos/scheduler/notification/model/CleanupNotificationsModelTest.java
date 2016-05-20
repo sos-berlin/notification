@@ -15,7 +15,7 @@ public class CleanupNotificationsModelTest {
     }
 
     public void init() throws Exception {
-        connection = new SOSHibernateConnection(options.hibernate_configuration_file.Value());
+        connection = new SOSHibernateConnection(options.hibernate_configuration_file.getValue());
         connection.setAutoCommit(options.connection_autocommit.value());
         connection.setTransactionIsolation(options.connection_transaction_isolation.value());
         connection.setIgnoreAutoCommitTransactions(true);
@@ -32,7 +32,7 @@ public class CleanupNotificationsModelTest {
     public static void main(String[] args) throws Exception {
        
         CleanupNotificationsJobOptions opt = new CleanupNotificationsJobOptions();
-        opt.hibernate_configuration_file.Value(Config.HIBERNATE_CONFIGURATION_FILE);
+        opt.hibernate_configuration_file.setValue(Config.HIBERNATE_CONFIGURATION_FILE);
 
         CleanupNotificationsModelTest t = new CleanupNotificationsModelTest(opt);
 

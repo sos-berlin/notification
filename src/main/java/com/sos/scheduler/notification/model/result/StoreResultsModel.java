@@ -29,9 +29,9 @@ public class StoreResultsModel extends NotificationModel implements INotificatio
 
     @Override
     public void process() throws Exception {
-        ArrayList<String> resultParamsAsList = getResultParamsAsArrayList(options.scheduler_notification_result_parameters.Value());
+        ArrayList<String> resultParamsAsList = getResultParamsAsArrayList(options.scheduler_notification_result_parameters.getValue());
         boolean hasResultParams = !resultParamsAsList.isEmpty();
-        HashMap<String, String> hm = options.Settings();
+        HashMap<String, String> hm = options.settings();
         HashMap<String, String> hmInsert = new HashMap<String, String>();
         if (hm != null) {
             for (String name : hm.keySet()) {
@@ -63,12 +63,12 @@ public class StoreResultsModel extends NotificationModel implements INotificatio
     private DBItemSchedulerMonNotifications getNotification() throws Exception {
         String method = "getNotification";
         DBItemSchedulerMonNotifications tmp = new DBItemSchedulerMonNotifications();
-        tmp.setSchedulerId(options.mon_results_scheduler_id.Value());
+        tmp.setSchedulerId(options.mon_results_scheduler_id.getValue());
         tmp.setStandalone(options.mon_results_standalone.value());
         tmp.setTaskId(new Long(options.mon_results_task_id.value()));
-        tmp.setOrderStepState(options.mon_results_order_step_state.Value());
-        tmp.setJobChainName(options.mon_results_job_chain_name.Value());
-        tmp.setOrderId(options.mon_results_order_id.Value());
+        tmp.setOrderStepState(options.mon_results_order_step_state.getValue());
+        tmp.setJobChainName(options.mon_results_job_chain_name.getValue());
+        tmp.setOrderId(options.mon_results_order_id.getValue());
         if (tmp.getStandalone()) {
             SchedulerTaskHistoryDBItem h = getDbLayer().getSchedulerHistory(tmp.getTaskId());
             if (h != null) {

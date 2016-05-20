@@ -18,14 +18,14 @@ public class CleanupNotificationsJobJSAdapterClass extends JobSchedulerJobAdapte
 			super.spooler_process();
 			
 			CleanupNotificationsJobOptions options = job.getOptions();
-			options.CurrentNodeName(this.getCurrentNodeName());
+			options.setCurrentNodeName(this.getCurrentNodeName());
 			options.setAllOptions(getSchedulerParameterAsProperties(getParameters()));
 		    job.setJSJobUtilites(this);
 		    job.setJSCommands(this);
 		    
-		    if(SOSString.isEmpty(options.hibernate_configuration_file.Value())){
+		    if(SOSString.isEmpty(options.hibernate_configuration_file.getValue())){
 		    	File f = new File(new File(spooler.configuration_directory()).getParent(), "hibernate.cfg.xml");
-		    	options.hibernate_configuration_file.Value(f.getAbsolutePath());
+		    	options.hibernate_configuration_file.setValue(f.getAbsolutePath());
 		    }
 		    
 	        job.init();

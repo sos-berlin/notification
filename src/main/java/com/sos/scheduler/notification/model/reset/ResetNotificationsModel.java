@@ -25,14 +25,14 @@ public class ResetNotificationsModel extends NotificationModel implements INotif
     public void process() throws Exception {
         logger.info(String.format("process"));
 
-        logger.info(String.format("process: operation = %s", options.operation.Value()));
+        logger.info(String.format("process: operation = %s", options.operation.getValue()));
 
-        if (options.operation.Value().toLowerCase().equals(OPERATION_ACKNOWLEDGE)) {
-            resetAcknowledged(options.system_id.Value(), options.service_name.Value());
-        } else if (options.operation.Value().toLowerCase().equals(OPERATION_RESET_SERVICES)) {
+        if (options.operation.getValue().toLowerCase().equals(OPERATION_ACKNOWLEDGE)) {
+            resetAcknowledged(options.system_id.getValue(), options.service_name.getValue());
+        } else if (options.operation.getValue().toLowerCase().equals(OPERATION_RESET_SERVICES)) {
             resetServices();
         } else {
-            throw new Exception(String.format("unknown operation = %s", options.operation.Value()));
+            throw new Exception(String.format("unknown operation = %s", options.operation.getValue()));
         }
     }
 

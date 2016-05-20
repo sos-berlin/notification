@@ -56,13 +56,13 @@ public class SystemNotifierJobPlugin extends SystemNotifierPlugin {
 		parameters.set_var("command", getCommand());
 
 		logger.info(String.format("call job = %s with command = %s", 
-				options.plugin_job_name.Value(),
+				options.plugin_job_name.getValue(),
 				this.getCommand()));
 		
-		Job j = spooler.job(options.plugin_job_name.Value());
+		Job j = spooler.job(options.plugin_job_name.getValue());
 		if (j == null) {
 			throw new Exception(String.format("job not found : %s",
-					options.plugin_job_name.Value()));
+					options.plugin_job_name.getValue()));
 		}
 		Task t = j.start(parameters);
 		

@@ -23,13 +23,13 @@ public class StoreResultsJobJSAdapterClass extends JobSchedulerJobAdapter  {
 		
 		job = new StoreResultsJob();
 		options = job.getOptions();
-		options.CurrentNodeName(this.getCurrentNodeName());
+		options.setCurrentNodeName(this.getCurrentNodeName());
 		options.setAllOptions(getSchedulerParameterAsProperties(getJobOrOrderParameters()));
 	    job.setJSJobUtilites(this);
 		
-	    if(SOSString.isEmpty(options.scheduler_notification_hibernate_configuration_file.Value())){
+	    if(SOSString.isEmpty(options.scheduler_notification_hibernate_configuration_file.getValue())){
 	    	File f = new File(new File(spooler.configuration_directory()).getParent(), "hibernate.cfg.xml");
-	    	options.scheduler_notification_hibernate_configuration_file.Value(f.getAbsolutePath());
+	    	options.scheduler_notification_hibernate_configuration_file.setValue(f.getAbsolutePath());
 	    }
 	    job.init();
 	}
@@ -55,27 +55,27 @@ public class StoreResultsJobJSAdapterClass extends JobSchedulerJobAdapter  {
 		if (params != null && params.count() > 0) {
 			init();
 			
-			options.mon_results_scheduler_id.Value(spooler.id());
+			options.mon_results_scheduler_id.setValue(spooler.id());
 			options.mon_results_task_id.value(spooler_task.id());
 			
 			if(order != null && order.job_chain_node() != null){
-				options.mon_results_order_step_state.Value(order.job_chain_node().state());
+				options.mon_results_order_step_state.setValue(order.job_chain_node().state());
 			}
 			else{
 				logger.debug(String.format("set mon_results_order_step_state to NULL"));
-				options.mon_results_order_step_state.Value(null);
+				options.mon_results_order_step_state.setValue(null);
 			}
 			
-			options.mon_results_order_id.Value((order == null ? null : order.id()));
+			options.mon_results_order_id.setValue((order == null ? null : order.id()));
 			options.mon_results_standalone.value(order == null ? true : false);
 			
 			if(order != null && order.job_chain() != null){
-				options.mon_results_job_chain_name.Value(order.job_chain().path());
+				options.mon_results_job_chain_name.setValue(order.job_chain().path());
 					
 			}
 			else{
 				logger.debug(String.format("set mon_results_job_chain_name to NULL"));
-				options.mon_results_job_chain_name.Value(null);
+				options.mon_results_job_chain_name.setValue(null);
 			}
 			
 			job.execute();

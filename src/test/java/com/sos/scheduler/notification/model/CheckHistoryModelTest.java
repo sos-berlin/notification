@@ -18,7 +18,7 @@ public class CheckHistoryModelTest {
 	}
 	
 	public void init() throws Exception {
-		connection = new SOSHibernateConnection(options.hibernate_configuration_file.Value());
+		connection = new SOSHibernateConnection(options.hibernate_configuration_file.getValue());
 		connection.setAutoCommit(options.connection_autocommit.value());
 		connection.setTransactionIsolation(options.connection_transaction_isolation.value());
 		connection.setIgnoreAutoCommitTransactions(true);
@@ -37,12 +37,12 @@ public class CheckHistoryModelTest {
 	public static void main(String[] args) throws Exception {
 		
 		CheckHistoryJobOptions opt = new CheckHistoryJobOptions();
-		opt.hibernate_configuration_file.Value(Config.HIBERNATE_CONFIGURATION_FILE);
-		opt.schema_configuration_file.Value(Config.SCHEMA_CONFIGURATION_FILE);
+		opt.hibernate_configuration_file.setValue(Config.HIBERNATE_CONFIGURATION_FILE);
+		opt.schema_configuration_file.setValue(Config.SCHEMA_CONFIGURATION_FILE);
 		opt.allow_db_dependent_queries.value(true);
-		opt.max_history_age.Value("1d");
+		opt.max_history_age.setValue("1d");
 		opt.batch_size.value(1000000);
-		opt.plugins.Value("com.sos.scheduler.notification.plugins.history.CheckHistoryTimerPlugin");
+		opt.plugins.setValue("com.sos.scheduler.notification.plugins.history.CheckHistoryTimerPlugin");
 		
 		CheckHistoryModelTest t = new CheckHistoryModelTest(opt);
 

@@ -30,10 +30,10 @@ public class CleanupNotificationsModel extends NotificationModel implements INot
         try {
             DateTime start = new DateTime();
 
-            int minutes = NotificationModel.resolveAge2Minutes(this.options.age.Value());
+            int minutes = NotificationModel.resolveAge2Minutes(this.options.age.getValue());
             Date date = DBLayerSchedulerMon.getCurrentDateTimeMinusMinutes(minutes);
 
-            logger.info(String.format("%s: age = %s, delete where created <= %s minutes ago (%s)", method, this.options.age.Value(), minutes, DBLayer.getDateAsString(date)));
+            logger.info(String.format("%s: age = %s, delete where created <= %s minutes ago (%s)", method, this.options.age.getValue(), minutes, DBLayer.getDateAsString(date)));
 
             getDbLayer().getConnection().beginTransaction();
             getDbLayer().cleanupNotifications(date);

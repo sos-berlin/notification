@@ -18,7 +18,7 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 	
 	public void init() throws Exception {
 		try{
-			connection = new SOSHibernateConnection(getOptions().scheduler_notification_hibernate_configuration_file.Value());
+			connection = new SOSHibernateConnection(getOptions().scheduler_notification_hibernate_configuration_file.getValue());
 			connection.setAutoCommit(getOptions().scheduler_notification_connection_autocommit.value());
 			connection.setIgnoreAutoCommitTransactions(true);
 			connection.setTransactionIsolation(getOptions().scheduler_notification_connection_transaction_isolation.value());

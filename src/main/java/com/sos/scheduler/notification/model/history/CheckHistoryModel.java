@@ -78,12 +78,12 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
         jobChains = new LinkedHashMap<String, ArrayList<String>>();
         jobs = new LinkedHashMap<String, ArrayList<String>>();
         File dir = null;
-        File schemaFile = new File(options.schema_configuration_file.Value());
+        File schemaFile = new File(options.schema_configuration_file.getValue());
         if (!schemaFile.exists()) {
             throw new Exception(String.format("schema file not found: %s", schemaFile.getAbsolutePath()));
         }
-        if (SOSString.isEmpty(this.options.configuration_dir.Value())) {
-            dir = new File(this.options.configuration_dir.Value());
+        if (SOSString.isEmpty(this.options.configuration_dir.getValue())) {
+            dir = new File(this.options.configuration_dir.getValue());
         } else {
             dir = schemaFile.getParentFile().getAbsoluteFile();
         }
@@ -282,7 +282,7 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 
     private Date getLastNotificationDate(DBItemNotificationSchedulerVariables dbItem, Date dateTo) throws Exception {
         Date dateFrom = getDbLayer().getLastNotificationDate(dbItem);
-        int maxAge = NotificationModel.resolveAge2Minutes(options.max_history_age.Value());
+        int maxAge = NotificationModel.resolveAge2Minutes(options.max_history_age.getValue());
         if (dateFrom != null) {
             Long startTimeMinutes = dateFrom.getTime() / 1000 / 60;
             Long endTimeMinutes = dateTo.getTime() / 1000 / 60;
@@ -301,13 +301,13 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
         String method = "updateExistingNotifications";
         getDbLayer().getConnection().beginTransaction();
         Date maxStartTime = null;
-        int uncompletedAge = NotificationModel.resolveAge2Minutes(options.max_uncompleted_age.Value());
+        int uncompletedAge = NotificationModel.resolveAge2Minutes(options.max_uncompleted_age.getValue());
         if (uncompletedAge > 0) {
             maxStartTime = DBLayer.getCurrentDateTimeMinusMinutes(uncompletedAge);
         }
         int result = getDbLayer().updateUncompletedNotifications(largeResultFetchSize, options.allow_db_dependent_queries.value(), maxStartTime);
         LOGGER.info(String.format("%s: bulk updateUncompletedNotifications, max_uncompleted_age = %s (from %s), updated = %s", method, 
-                options.max_uncompleted_age.Value(), DBLayer.getDateAsString(maxStartTime), result));
+                options.max_uncompleted_age.getValue(), DBLayer.getDateAsString(maxStartTime), result));
         result = getDbLayer().setOrderNotificationsRecovered();
         LOGGER.info(String.format("%s: bulk setOrderNotificationsRecovered, updated = %s", method, result));
         getDbLayer().getConnection().commit();
@@ -569,8 +569,8 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 
     private void registerPlugins() throws Exception {
         plugins = new ArrayList<ICheckHistoryPlugin>();
-        if (!SOSString.isEmpty(this.options.plugins.Value())) {
-            String[] arr = this.options.plugins.Value().trim().split(";");
+        if (!SOSString.isEmpty(this.options.plugins.getValue())) {
+            String[] arr = this.options.plugins.getValue().trim().split(";");
             for (int i = 0; i < arr.length; i++) {
                 try {
                     Class<ICheckHistoryPlugin> c = (Class<ICheckHistoryPlugin>) Class.forName(arr[i].trim());

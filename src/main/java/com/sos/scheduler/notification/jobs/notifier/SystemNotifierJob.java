@@ -23,7 +23,7 @@ public class SystemNotifierJob extends JSJobUtilitiesClass<SystemNotifierJobOpti
 		spooler = sp;
 		
 		try{
-			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.Value());
+			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.getValue());
 			connection.setAutoCommit(getOptions().connection_autocommit.value());
 			connection.setIgnoreAutoCommitTransactions(true);
 			connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
