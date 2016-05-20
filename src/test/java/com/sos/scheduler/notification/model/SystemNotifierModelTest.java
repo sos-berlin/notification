@@ -24,7 +24,7 @@ public class SystemNotifierModelTest {
 	}
 	
 	public void init() throws Exception {
-		connection = new SOSHibernateConnection(options.hibernate_configuration_file.Value());
+		connection = new SOSHibernateConnection(options.hibernate_configuration_file.getValue());
 		connection.setAutoCommit(options.connection_autocommit.value());
 		connection.setTransactionIsolation(options.connection_transaction_isolation.value());
 		connection.setIgnoreAutoCommitTransactions(true);
@@ -42,9 +42,9 @@ public class SystemNotifierModelTest {
 	public static void main(String[] args) throws Exception {
 	    
 	    SystemNotifierJobOptions opt = new SystemNotifierJobOptions();
-		opt.hibernate_configuration_file.Value(Config.HIBERNATE_CONFIGURATION_FILE);
-		opt.schema_configuration_file.Value(Config.SCHEMA_CONFIGURATION_FILE);
-		opt.system_configuration_file.Value(Config.SYSTEM_CONFIGURATION_FILE);
+		opt.hibernate_configuration_file.setValue(Config.HIBERNATE_CONFIGURATION_FILE);
+		opt.schema_configuration_file.setValue(Config.SCHEMA_CONFIGURATION_FILE);
+		opt.system_configuration_file.setValue(Config.SYSTEM_CONFIGURATION_FILE);
 		
 		SystemNotifierModelTest t = new SystemNotifierModelTest(opt);
 
