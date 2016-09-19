@@ -714,7 +714,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         if (jobChain.getExcludedSteps().contains(jcn.getLastStepForNotification().getOrderStepState())) {
             if (notifyOnError) {
                 if (jcn.getLastStepForNotification().getOrderEndTime() != null
-                        && jcn.getLastStepForNotification().getOrderStepState().equals(jcn.getLastStep().getState())) {
+                        && jcn.getLastStepForNotification().getOrderStepState().equals(jcn.getLastStep().getStateAsString())) {
                     LOGGER.debug(String.format("%s: [%s][%s]. order is completed and error step state equals config step = %s and this is "
                             + "the last order step.  create and do notify system: notification.id = %s", method, notifyMsg, serviceName, jcn
                             .getLastStepForNotification().getOrderStepState(), notification.getId()));
