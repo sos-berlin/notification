@@ -26,6 +26,7 @@ public class DBItemNotificationSchedulerHistoryOrderStep implements Serializable
     private Long orderHistoryId;
     private String orderSchedulerId;
     private String orderId;
+    private String orderTitle;
     private String orderJobChain;
     private String orderState;
     private String orderStateText;
@@ -167,6 +168,16 @@ public class DBItemNotificationSchedulerHistoryOrderStep implements Serializable
         this.orderId = orderId;
     }
 
+    @Column(name = "`ORDER_TITLE`", nullable = true)
+    public String getOrderTitle() {
+        return orderTitle;
+    }
+
+    @Column(name = "`ORDER_TITLE`", nullable = true)
+    public void setOrderTitle(String orderTitle) {
+        this.orderTitle = orderTitle;
+    }
+    
     @Column(name = "`ORDER_JOB_CHAIN`", nullable = true)
     public String getOrderJobChain() {
         return orderJobChain;

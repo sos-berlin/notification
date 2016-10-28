@@ -257,8 +257,10 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
             return;
         }
 
-        // command = command.replaceAll("%(?i)" + varName + "%", varValue);
-        command = command.replaceAll("\\{(?i)" + varName + "\\}", Matcher.quoteReplacement(normalizeVarValue(varValue)));
+        String normalized = normalizeVarValue(varValue);
+        //2 replacements - compatibility, using of the old {var} and new ${var} syntax
+        command = command.replaceAll("\\$\\{(?i)" + varName + "\\}", Matcher.quoteReplacement(normalized));
+        command = command.replaceAll("\\{(?i)" + varName + "\\}", Matcher.quoteReplacement(normalized));
     }
 
     public boolean isWindows() {

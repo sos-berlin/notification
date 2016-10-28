@@ -382,7 +382,7 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
                             step.getOrderJobChain(), 
                             step.getOrderJobChain(), 
                             step.getOrderId(), 
-                            step.getOrderId(), 
+                            step.getOrderTitle(), 
                             step.getOrderStartTime(), 
                             step.getOrderEndTime(), 
                             step.getStepState(), 
@@ -404,7 +404,7 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
                     dbItem.setJobChainName(step.getOrderJobChain());
                     dbItem.setJobChainTitle(step.getOrderJobChain());
                     dbItem.setOrderId(step.getOrderId());
-                    dbItem.setOrderTitle(step.getOrderId());
+                    dbItem.setOrderTitle(step.getOrderTitle());
                     dbItem.setOrderStartTime(step.getOrderStartTime());
                     dbItem.setOrderEndTime(step.getOrderEndTime());
                     dbItem.setOrderStepState(step.getStepState());

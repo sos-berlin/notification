@@ -45,6 +45,7 @@ public class DBLayerSchedulerMon extends DBLayer {
     private static final String H_JOBNAME = "h.jobName";
     private static final String H_STARTTIME = "h.startTime";
     private static final String H_EXIT_CODE = "h.exitCode";
+    private static final String OH_CAUSE = "oh.cause";
     private static final String OH_END_TIME_UNDERSCORED = "oh.END_TIME";
     private static final String OH_ENDTIME = "oh.endTime";
     private static final String OH_HISTORYID = "oh.historyId";
@@ -64,6 +65,7 @@ public class DBLayerSchedulerMon extends DBLayer {
     private static final String ORDER_STARTTIME = "orderStartTime";
     private static final String ORDER_STATE = "orderState";
     private static final String ORDER_STATE_TEXT = "orderStateText";
+    private static final String ORDER_TITLE = "orderTitle";
     private static final String OSH_ENDTIME = "osh.endTime";
     private static final String OSH_ERROR = "osh.error";
     private static final String OSH_ERROR_CODE = "osh.errorCode";
@@ -122,6 +124,7 @@ public class DBLayerSchedulerMon extends DBLayer {
             pl.add(Projections.property(OH_HISTORYID).as(ORDER_HISTORY_ID));
             pl.add(Projections.property(OH_SPOOLERID).as(ORDER_SCHEDULER_ID));
             pl.add(Projections.property(OH_ORDERID).as(ORDER_ID));
+            pl.add(Projections.property(OH_CAUSE).as(ORDER_TITLE));
             pl.add(Projections.property(OH_JOBCHAIN).as(ORDER_JOB_CHAIN));
             pl.add(Projections.property(OH_STATE).as(ORDER_STATE));
             pl.add(Projections.property(OH_STATETEXT).as(ORDER_STATE_TEXT));
@@ -236,6 +239,7 @@ public class DBLayerSchedulerMon extends DBLayer {
         pl.add(Projections.property(OH_HISTORYID).as(ORDER_HISTORY_ID));
         pl.add(Projections.property(OH_SPOOLERID).as(ORDER_SCHEDULER_ID));
         pl.add(Projections.property(OH_ORDERID).as(ORDER_ID));
+        pl.add(Projections.property(OH_CAUSE).as(ORDER_TITLE));
         pl.add(Projections.property(OH_JOBCHAIN).as(ORDER_JOB_CHAIN));
         pl.add(Projections.property(OH_STATE).as(ORDER_STATE));
         pl.add(Projections.property(OH_STATETEXT).as(ORDER_STATE_TEXT));
@@ -284,6 +288,7 @@ public class DBLayerSchedulerMon extends DBLayer {
         pl.add(Projections.property(OH_HISTORYID).as(ORDER_HISTORY_ID));
         pl.add(Projections.property(OH_SPOOLERID).as(ORDER_SCHEDULER_ID));
         pl.add(Projections.property(OH_ORDERID).as(ORDER_ID));
+        pl.add(Projections.property(OH_CAUSE).as(ORDER_TITLE));
         pl.add(Projections.property(OH_JOBCHAIN).as(ORDER_JOB_CHAIN));
         pl.add(Projections.property(OH_STATE).as(ORDER_STATE));
         pl.add(Projections.property(OH_STATETEXT).as(ORDER_STATE_TEXT));
