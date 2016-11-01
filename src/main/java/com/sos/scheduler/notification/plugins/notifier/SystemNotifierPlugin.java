@@ -241,23 +241,24 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
         if (cmd == null) {
             return null;
         }
-        if (varValue == null) {
-            return cmd;
+       
+        String normalized = varValue == null ? "" : normalizeVarValue(varValue);
+        if(isWindows){
+        	cmd = cmd.replaceAll("%(?i)" + varName + "%", Matcher.quoteReplacement(normalized));
         }
-
-        String name = isWindows ? "%(?i)" + varName + "%" : "\\$(?i)" + varName;
-        return cmd.replaceAll(name, Matcher.quoteReplacement(normalizeVarValue(varValue)));
+        else{
+         	cmd = cmd.replaceAll("\\$\\{(?i)" + varName + "\\}", Matcher.quoteReplacement(normalized));
+         	cmd = cmd.replaceAll("\\$(?i)" + varName, Matcher.quoteReplacement(normalized));
+        }
+        return cmd;
     }
 
     private void resolveCommandVar(String varName, String varValue) {
         if (command == null) {
             return;
         }
-        if (varValue == null) {
-            return;
-        }
-
-        String normalized = normalizeVarValue(varValue);
+        
+        String normalized = varValue == null ? "" : normalizeVarValue(varValue);
         //2 replacements - compatibility, using of the old {var} and new ${var} syntax
         command = command.replaceAll("\\$\\{(?i)" + varName + "\\}", Matcher.quoteReplacement(normalized));
         command = command.replaceAll("\\{(?i)" + varName + "\\}", Matcher.quoteReplacement(normalized));
