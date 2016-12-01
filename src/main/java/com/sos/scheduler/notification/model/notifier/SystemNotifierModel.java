@@ -148,8 +148,8 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         Long notifications = timer.getNotifications();
         if (notifications < 1) {
             counter.addSkip();
-            LOGGER.debug(String.format("%s: serviceName = %s. skip notify timer (notifications is %s): check.id = %s, schedulerId = %s, jobChain = %s", method,
-                    serviceName, notifications, check.getId(), check.getSchedulerId(), check.getJobChain()));
+            LOGGER.debug(String.format("%s: serviceName = %s. skip notify timer (notifications is %s): check.id = %s", method,
+                    serviceName, notifications, check.getId()));
             return;
         }
         DBItemSchedulerMonSystemNotifications sm = null;

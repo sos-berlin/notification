@@ -112,7 +112,7 @@ public class StoreResultsModel extends NotificationModel implements INotificatio
         DBItemSchedulerMonNotifications dbItem = getDbLayer().getNotification(tmp.getSchedulerId(), tmp.getStandalone(), tmp.getTaskId(), tmp.getStep(), tmp.getOrderHistoryId());
         if (dbItem == null) {
             dbItem = getDbLayer().createNotification(tmp.getSchedulerId(), tmp.getStandalone(), tmp.getTaskId(), tmp.getStep(), tmp.getOrderHistoryId(), tmp.getJobChainName(), tmp.getJobChainName(), tmp.getOrderId(), tmp.getOrderId(), tmp.getOrderStartTime(), tmp.getOrderEndTime(), tmp.getOrderStepState(), tmp.getOrderStepStartTime(), tmp.getOrderStepEndTime(), tmp.getJobName(), tmp.getJobName(), tmp.getTaskStartTime(), tmp.getTaskEndTime(),tmp.getError(),tmp.getReturnCode(), tmp.getError(), tmp.getErrorCode(), tmp.getErrorText());
-            LOGGER.debug(String.format("create new notification: schedulerId = %s, standalone = %s, taskId = %s, historyId = %s, stepState = %s", tmp.getSchedulerId(), tmp.isStandalone(), tmp.getTaskId(), tmp.getOrderHistoryId(), tmp.getOrderStepState()));
+            LOGGER.debug(String.format("create new notification: schedulerId = %s, standalone = %s, taskId = %s, historyId = %s, stepState = %s", tmp.getSchedulerId(), tmp.getStandalone(), tmp.getTaskId(), tmp.getOrderHistoryId(), tmp.getOrderStepState()));
             getDbLayer().getConnection().save(dbItem);
         }
         return dbItem;

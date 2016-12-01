@@ -61,7 +61,7 @@ public class CheckHistoryJob extends JSJobUtilitiesClass<CheckHistoryJobOptions>
 	
 	public CheckHistoryJobOptions getOptions() {
 		if (objOptions == null) {
-			objOptions = new CheckHistoryJobOptions();
+		    objOptions = new CheckHistoryJobOptions();
 		}
 		return objOptions;
 	}
