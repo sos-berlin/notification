@@ -37,7 +37,7 @@ public class DBItemNotificationSchedulerHistoryOrderStep implements Serializable
     private String taskCause;
     private Date taskStartTime;
     private Date taskEndTime;
-    private Long taskExitCode;
+    private Integer taskExitCode;
     
     public DBItemNotificationSchedulerHistoryOrderStep() {
     }
@@ -239,12 +239,12 @@ public class DBItemNotificationSchedulerHistoryOrderStep implements Serializable
     }
 
     @Column(name = "`TASK_EXIT_CODE`", nullable = true)
-    public Long getTaskExitCode() {
+    public Integer getTaskExitCode() {
         return taskExitCode;
     }
 
     @Column(name = "`TASK_EXIT_CODE`", nullable = true)
-    public void setTaskExitCode(Long val) {
+    public void setTaskExitCode(Integer val) {
         this.taskExitCode = val;
     }
     
