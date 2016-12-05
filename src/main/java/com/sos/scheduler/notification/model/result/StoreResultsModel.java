@@ -123,7 +123,7 @@ public class StoreResultsModel extends NotificationModel implements INotificatio
                     tmp.getOrderStepState(), tmp.getOrderStepStartTime(), tmp.getOrderStepEndTime(), tmp.getJobName(), tmp.getJobName(), tmp.getTaskStartTime(),
                     tmp.getTaskEndTime(), tmp.getError(), tmp.getReturnCode(), tmp.getError(), tmp.getErrorCode(), tmp.getErrorText());
             LOGGER.debug(String.format("create new notification: schedulerId = %s, standalone = %s, taskId = %s, historyId = %s, stepState = %s",
-                    tmp.getSchedulerId(), tmp.isStandalone(), tmp.getTaskId(), tmp.getOrderHistoryId(), tmp.getOrderStepState()));
+                    tmp.getSchedulerId(), tmp.getStandalone(), tmp.getTaskId(), tmp.getOrderHistoryId(), tmp.getOrderStepState()));
             getDbLayer().getConnection().save(dbItem);
         }
         return dbItem;
