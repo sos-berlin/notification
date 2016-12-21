@@ -21,8 +21,8 @@ import sos.util.SOSString;
 import com.sos.hibernate.classes.SOSHibernateConnection;
 import com.sos.hibernate.classes.SOSHibernateConnection.Dbms;
 import com.sos.hibernate.classes.SOSHibernateResultSetProcessor;
-import com.sos.scheduler.history.db.SchedulerOrderStepHistoryDBItem;
-import com.sos.scheduler.history.db.SchedulerTaskHistoryDBItem;
+import com.sos.jitl.schedulerhistory.db.SchedulerOrderStepHistoryDBItem;
+import com.sos.jitl.schedulerhistory.db.SchedulerTaskHistoryDBItem;
 
 public class DBLayerSchedulerMon extends DBLayer {
 

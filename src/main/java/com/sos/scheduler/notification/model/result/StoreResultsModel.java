@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import sos.util.SOSString;
 
 import com.sos.hibernate.classes.SOSHibernateConnection;
-import com.sos.scheduler.history.db.SchedulerTaskHistoryDBItem;
+import com.sos.jitl.schedulerhistory.db.SchedulerTaskHistoryDBItem;
 import com.sos.scheduler.notification.db.DBItemNotificationSchedulerHistoryOrderStep;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonNotifications;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonResults;

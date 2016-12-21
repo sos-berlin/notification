@@ -36,15 +36,15 @@
 			<version>${project.version}</version>
 		</dependency>
 		
-		<dependency>
-			<groupId>com.sos-berlin.commons</groupId>
-			<artifactId>sos-xml</artifactId>
-			<version>${project.version}</version>
-		</dependency>
+        <dependency>
+            <groupId>com.sos-berlin.commons</groupId>
+            <artifactId>sos-xml</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
-	        <groupId>com.sos-berlin.jid</groupId>
-	        <artifactId>scheduler-history</artifactId>
+            <groupId>com.sos-berlin.jitl</groupId>
+            <artifactId>jitl-jobs</artifactId>
             <version>${project.version}</version>
         </dependency>
 

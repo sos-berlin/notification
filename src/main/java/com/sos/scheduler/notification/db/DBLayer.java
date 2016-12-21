@@ -12,9 +12,9 @@ import org.slf4j.LoggerFactory;
 
 import com.sos.hibernate.classes.ClassList;
 import com.sos.hibernate.classes.SOSHibernateConnection;
-import com.sos.scheduler.history.db.SchedulerOrderHistoryDBItem;
-import com.sos.scheduler.history.db.SchedulerOrderStepHistoryDBItem;
-import com.sos.scheduler.history.db.SchedulerTaskHistoryDBItem;
+import com.sos.jitl.schedulerhistory.db.SchedulerOrderHistoryDBItem;
+import com.sos.jitl.schedulerhistory.db.SchedulerOrderStepHistoryDBItem;
+import com.sos.jitl.schedulerhistory.db.SchedulerTaskHistoryDBItem;
 
 public class DBLayer {
 
