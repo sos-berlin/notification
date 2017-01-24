@@ -18,13 +18,13 @@ public class CleanupNotificationsJob extends JSJobUtilitiesClass<CleanupNotifica
 
 	public void init() throws Exception {
 		try{
-			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.getValue());
-			connection.setAutoCommit(getOptions().connection_autocommit.value());
-			connection.setIgnoreAutoCommitTransactions(true);
-			connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
-			connection.setUseOpenStatelessSession(true);
-			connection.addClassMapping(DBLayer.getNotificationClassMapping());
-			connection.connect();
+//			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.getValue());
+//			connection.setAutoCommit(getOptions().connection_autocommit.value());
+//			connection.setIgnoreAutoCommitTransactions(true);
+//			connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
+//			connection.setUseOpenStatelessSession(true);
+//			connection.addClassMapping(DBLayer.getNotificationClassMapping());
+//			connection.connect();
 		}
 		catch(Exception ex){
 			throw new Exception(String.format("init connection: %s",

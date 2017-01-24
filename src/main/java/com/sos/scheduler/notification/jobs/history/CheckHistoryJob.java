@@ -18,14 +18,14 @@ public class CheckHistoryJob extends JSJobUtilitiesClass<CheckHistoryJobOptions>
 
 	public void init() throws Exception {
 		try{
-			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.getValue());
-			connection.setAutoCommit(getOptions().connection_autocommit.value());
-			connection.setIgnoreAutoCommitTransactions(true);
-			connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
-			connection.setUseOpenStatelessSession(true);
-			connection.addClassMapping(DBLayer.getSchedulerClassMapping());
-			connection.addClassMapping(DBLayer.getNotificationClassMapping());
-			connection.connect();
+//			connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.getValue());
+//			connection.setAutoCommit(getOptions().connection_autocommit.value());
+//			connection.setIgnoreAutoCommitTransactions(true);
+//			connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
+//			connection.setUseOpenStatelessSession(true);
+//			connection.addClassMapping(DBLayer.getSchedulerClassMapping());
+//			connection.addClassMapping(DBLayer.getNotificationClassMapping());
+//			connection.connect();
 		}
 		catch(Exception ex){
 			throw new Exception(String.format("init connection: %s",

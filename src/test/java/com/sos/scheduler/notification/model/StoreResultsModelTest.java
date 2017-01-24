@@ -18,14 +18,14 @@ public class StoreResultsModelTest {
 	}
 	
 	public void init() throws Exception {
-		connection = new SOSHibernateConnection(options.scheduler_notification_hibernate_configuration_file.getValue());
-		connection.setAutoCommit(options.scheduler_notification_connection_autocommit.value());
-		connection.setTransactionIsolation(options.scheduler_notification_connection_transaction_isolation.value());
-		connection.setIgnoreAutoCommitTransactions(true);
-		connection.setUseOpenStatelessSession(true);
-		connection.addClassMapping(DBLayer.getSchedulerClassMapping());
-		connection.addClassMapping(DBLayer.getNotificationClassMapping());
-		connection.connect();
+//		connection = new SOSHibernateConnection(options.scheduler_notification_hibernate_configuration_file.getValue());
+//		connection.setAutoCommit(options.scheduler_notification_connection_autocommit.value());
+//		connection.setTransactionIsolation(options.scheduler_notification_connection_transaction_isolation.value());
+//		connection.setIgnoreAutoCommitTransactions(true);
+//		connection.setUseOpenStatelessSession(true);
+//		connection.addClassMapping(DBLayer.getSchedulerClassMapping());
+//		connection.addClassMapping(DBLayer.getNotificationClassMapping());
+//		connection.connect();
 	}
 
 	public void exit() {

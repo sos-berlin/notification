@@ -18,14 +18,14 @@ public class StoreResultsJob extends JSJobUtilitiesClass<StoreResultsJobOptions>
 	
 	public void init() throws Exception {
 		try{
-			connection = new SOSHibernateConnection(getOptions().scheduler_notification_hibernate_configuration_file.getValue());
-			connection.setAutoCommit(getOptions().scheduler_notification_connection_autocommit.value());
-			connection.setIgnoreAutoCommitTransactions(true);
-			connection.setTransactionIsolation(getOptions().scheduler_notification_connection_transaction_isolation.value());
-			connection.setUseOpenStatelessSession(true);
-			connection.addClassMapping(DBLayer.getSchedulerClassMapping());
-			connection.addClassMapping(DBLayer.getNotificationClassMapping());
-			connection.connect();
+//			connection = new SOSHibernateConnection(getOptions().scheduler_notification_hibernate_configuration_file.getValue());
+//			connection.setAutoCommit(getOptions().scheduler_notification_connection_autocommit.value());
+//			connection.setIgnoreAutoCommitTransactions(true);
+//			connection.setTransactionIsolation(getOptions().scheduler_notification_connection_transaction_isolation.value());
+//			connection.setUseOpenStatelessSession(true);
+//			connection.addClassMapping(DBLayer.getSchedulerClassMapping());
+//			connection.addClassMapping(DBLayer.getNotificationClassMapping());
+//			connection.connect();
 		}
 		catch(Exception ex){
 			throw new Exception(String.format("reporting connection: %s",

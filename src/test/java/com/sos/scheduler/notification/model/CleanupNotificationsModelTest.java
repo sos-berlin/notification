@@ -15,12 +15,12 @@ public class CleanupNotificationsModelTest {
     }
 
     public void init() throws Exception {
-        connection = new SOSHibernateConnection(options.hibernate_configuration_file.getValue());
-        connection.setAutoCommit(options.connection_autocommit.value());
-        connection.setTransactionIsolation(options.connection_transaction_isolation.value());
-        connection.setIgnoreAutoCommitTransactions(true);
-        connection.addClassMapping(DBLayer.getNotificationClassMapping());
-        connection.connect();
+//        connection = new SOSHibernateConnection(options.hibernate_configuration_file.getValue());
+//        connection.setAutoCommit(options.connection_autocommit.value());
+//        connection.setTransactionIsolation(options.connection_transaction_isolation.value());
+//        connection.setIgnoreAutoCommitTransactions(true);
+//        connection.addClassMapping(DBLayer.getNotificationClassMapping());
+//        connection.connect();
     }
 
     public void exit() {
