@@ -100,7 +100,7 @@ public class DBLayer {
     /** @param fieldName
      * @return */
     public String quote(String fieldName) {
-        return connection.quoteFieldName(fieldName);
+        return connection.getFactory().quoteFieldName(fieldName);
     }
 
     /** @return */
