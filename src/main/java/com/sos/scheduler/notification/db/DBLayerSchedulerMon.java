@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.hibernate.Criteria;
-import org.hibernate.Query;
+import org.hibernate.query.Query;
 import org.hibernate.ScrollMode;
 import org.hibernate.criterion.ProjectionList;
 import org.hibernate.criterion.Projections;
@@ -19,7 +19,8 @@ import org.slf4j.LoggerFactory;
 import sos.util.SOSString;
 
 import com.sos.hibernate.classes.SOSHibernateConnection;
-import com.sos.hibernate.classes.SOSHibernateConnection.Dbms;
+import com.sos.hibernate.classes.SOSHibernateFactory.Dbms;
+import com.sos.hibernate.classes.SOSHibernateFactory;
 import com.sos.hibernate.classes.SOSHibernateResultSetProcessor;
 import com.sos.jitl.schedulerhistory.db.SchedulerOrderStepHistoryDBItem;
 import com.sos.jitl.schedulerhistory.db.SchedulerTaskHistoryDBItem;
@@ -409,7 +410,7 @@ public class DBLayerSchedulerMon extends DBLayer {
         int result = 0;
         try {
             if (isDbDependent) {
-                Enum<SOSHibernateConnection.Dbms> dbms = getConnection().getDbms();
+                Enum<SOSHibernateFactory.Dbms> dbms = getConnection().getFactory().getDbms();
                 if (dbms.equals(Dbms.MSSQL)) {
                     executed = true;
                     StringBuilder sb = new StringBuilder("update mn");
