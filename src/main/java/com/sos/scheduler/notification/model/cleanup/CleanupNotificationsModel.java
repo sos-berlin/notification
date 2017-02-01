@@ -6,7 +6,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sos.hibernate.classes.SOSHibernateConnection;
+import com.sos.hibernate.classes.SOSHibernateStatelessConnection;
 import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
 import com.sos.scheduler.notification.jobs.cleanup.CleanupNotificationsJobOptions;
@@ -18,7 +18,7 @@ public class CleanupNotificationsModel extends NotificationModel implements INot
     final Logger logger = LoggerFactory.getLogger(CleanupNotificationsModel.class);
     private CleanupNotificationsJobOptions options;
 
-    public CleanupNotificationsModel(SOSHibernateConnection conn, CleanupNotificationsJobOptions opt) throws Exception {
+    public CleanupNotificationsModel(SOSHibernateStatelessConnection conn, CleanupNotificationsJobOptions opt) throws Exception {
 
         super(conn);
         options = opt;

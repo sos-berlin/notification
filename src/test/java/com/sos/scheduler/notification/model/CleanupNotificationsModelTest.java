@@ -1,13 +1,12 @@
 package com.sos.scheduler.notification.model;
 
-import com.sos.hibernate.classes.SOSHibernateConnection;
-import com.sos.scheduler.notification.db.DBLayer;
+import com.sos.hibernate.classes.SOSHibernateStatelessConnection;
 import com.sos.scheduler.notification.jobs.cleanup.CleanupNotificationsJobOptions;
 import com.sos.scheduler.notification.model.cleanup.CleanupNotificationsModel;
 
 public class CleanupNotificationsModelTest {
 
-    private SOSHibernateConnection connection;
+    private SOSHibernateStatelessConnection connection;
     private CleanupNotificationsJobOptions options;
 
     public CleanupNotificationsModelTest(CleanupNotificationsJobOptions opt) {

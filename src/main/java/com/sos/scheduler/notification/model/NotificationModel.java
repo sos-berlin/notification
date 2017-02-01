@@ -11,11 +11,11 @@ import org.joda.time.format.PeriodFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sos.util.SOSString;
-
-import com.sos.hibernate.classes.SOSHibernateConnection;
+import com.sos.hibernate.classes.SOSHibernateStatelessConnection;
 import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
 import com.sos.scheduler.notification.helper.RegExFilenameFilter;
+
+import sos.util.SOSString;
 
 public class NotificationModel {
 
@@ -29,7 +29,7 @@ public class NotificationModel {
         ERROR, SUCCESS, RECOVERY, CHECK
     }
 
-    public NotificationModel(SOSHibernateConnection conn) throws Exception {
+    public NotificationModel(SOSHibernateStatelessConnection conn) throws Exception {
         if (conn == null) {
             throw new Exception("connection is NULL");
         }

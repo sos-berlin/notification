@@ -25,6 +25,7 @@ import sos.xml.SOSXMLXPath;
 import com.sos.hibernate.classes.SOSHibernateBatchProcessor;
 import com.sos.hibernate.classes.SOSHibernateConnection;
 import com.sos.hibernate.classes.SOSHibernateResultSetProcessor;
+import com.sos.hibernate.classes.SOSHibernateStatelessConnection;
 import com.sos.scheduler.notification.db.DBItemNotificationSchedulerHistoryOrderStep;
 import com.sos.scheduler.notification.db.DBItemNotificationSchedulerVariables;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonChecks;
@@ -52,7 +53,7 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
 	private CounterCheckHistory counter;
 	private Optional<Integer> largeResultFetchSize = Optional.empty();
 
-	public CheckHistoryModel(SOSHibernateConnection conn, CheckHistoryJobOptions opt) throws Exception {
+	public CheckHistoryModel(SOSHibernateStatelessConnection conn, CheckHistoryJobOptions opt) throws Exception {
 		super(conn);
 		options = opt;
 		try {

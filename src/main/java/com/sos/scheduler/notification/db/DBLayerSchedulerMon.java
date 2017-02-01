@@ -22,6 +22,7 @@ import com.sos.hibernate.classes.SOSHibernateConnection;
 import com.sos.hibernate.classes.SOSHibernateFactory.Dbms;
 import com.sos.hibernate.classes.SOSHibernateFactory;
 import com.sos.hibernate.classes.SOSHibernateResultSetProcessor;
+import com.sos.hibernate.classes.SOSHibernateStatelessConnection;
 import com.sos.jitl.schedulerhistory.db.SchedulerOrderStepHistoryDBItem;
 import com.sos.jitl.schedulerhistory.db.SchedulerTaskHistoryDBItem;
 
@@ -97,7 +98,7 @@ public class DBLayerSchedulerMon extends DBLayer {
     private static final String TASK_START_TIME = "taskStartTime";
     private static final String UPDATE = "update ";
 
-    public DBLayerSchedulerMon(SOSHibernateConnection conn) {
+    public DBLayerSchedulerMon(SOSHibernateStatelessConnection conn) {
         super(conn);
     }
 

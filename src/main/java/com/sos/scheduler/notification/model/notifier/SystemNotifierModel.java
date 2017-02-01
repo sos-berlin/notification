@@ -11,11 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import sos.spooler.Spooler;
-import sos.util.SOSString;
-import sos.xml.SOSXMLXPath;
-
-import com.sos.hibernate.classes.SOSHibernateConnection;
+import com.sos.hibernate.classes.SOSHibernateStatelessConnection;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonChecks;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonNotifications;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonSystemNotifications;
@@ -34,6 +30,10 @@ import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
 import com.sos.scheduler.notification.model.INotificationModel;
 import com.sos.scheduler.notification.model.NotificationModel;
 import com.sos.scheduler.notification.plugins.notifier.ISystemNotifierPlugin;
+
+import sos.spooler.Spooler;
+import sos.util.SOSString;
+import sos.xml.SOSXMLXPath;
 
 public class SystemNotifierModel extends NotificationModel implements INotificationModel {
 
@@ -58,7 +58,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
     private Optional<Integer> largeResultFetchSize = Optional.empty();
     private CounterSystemNotifier counter;
 
-    public SystemNotifierModel(SOSHibernateConnection conn, SystemNotifierJobOptions opt, Spooler sp) throws Exception {
+    public SystemNotifierModel(SOSHibernateStatelessConnection conn, SystemNotifierJobOptions opt, Spooler sp) throws Exception {
         super(conn);
         options = opt;
         spooler = sp;

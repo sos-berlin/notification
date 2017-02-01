@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sos.hibernate.classes.ClassList;
-import com.sos.hibernate.classes.SOSHibernateConnection;
+import com.sos.hibernate.classes.SOSHibernateStatelessConnection;
 import com.sos.jitl.schedulerhistory.db.SchedulerOrderHistoryDBItem;
 import com.sos.jitl.schedulerhistory.db.SchedulerOrderStepHistoryDBItem;
 import com.sos.jitl.schedulerhistory.db.SchedulerTaskHistoryDBItem;
@@ -62,13 +62,13 @@ public class DBLayer {
     public static final Long NOTIFICATION_OBJECT_TYPE_JOB = new Long(1);
     public static final Long NOTIFICATION_OBJECT_TYPE_DUMMY = new Long(100);
 
-    private SOSHibernateConnection connection;
+    private SOSHibernateStatelessConnection connection;
 
-    public DBLayer(SOSHibernateConnection conn) {
+    public DBLayer(SOSHibernateStatelessConnection conn) {
         connection = conn;
     }
 
-    public SOSHibernateConnection getConnection() {
+    public SOSHibernateStatelessConnection getConnection() {
         return connection;
     }
 

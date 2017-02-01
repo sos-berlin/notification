@@ -3,19 +3,19 @@ package com.sos.scheduler.notification.model.reset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sos.util.SOSString;
-
-import com.sos.hibernate.classes.SOSHibernateConnection;
+import com.sos.hibernate.classes.SOSHibernateStatelessConnection;
 import com.sos.scheduler.notification.jobs.reset.ResetNotificationsJobOptions;
 import com.sos.scheduler.notification.model.INotificationModel;
 import com.sos.scheduler.notification.model.NotificationModel;
+
+import sos.util.SOSString;
 
 public class ResetNotificationsModel extends NotificationModel implements INotificationModel {
 
     final Logger logger = LoggerFactory.getLogger(ResetNotificationsModel.class);
     private ResetNotificationsJobOptions options;
 
-    public ResetNotificationsModel(SOSHibernateConnection conn, ResetNotificationsJobOptions opt) throws Exception {
+    public ResetNotificationsModel(SOSHibernateStatelessConnection conn, ResetNotificationsJobOptions opt) throws Exception {
 
         super(conn);
         options = opt;

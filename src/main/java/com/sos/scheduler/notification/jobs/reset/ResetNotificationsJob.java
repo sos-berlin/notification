@@ -1,70 +1,82 @@
 package com.sos.scheduler.notification.jobs.reset;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.sos.JSHelper.Basics.JSJobUtilitiesClass;
-import com.sos.hibernate.classes.SOSHibernateConnection;
+import com.sos.hibernate.classes.SOSHibernateFactory;
+import com.sos.hibernate.classes.SOSHibernateStatelessConnection;
 import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.model.reset.ResetNotificationsModel;
 
 public class ResetNotificationsJob extends JSJobUtilitiesClass<ResetNotificationsJobOptions> {
 
-    private static final Logger LOGGER = Logger.getLogger(ResetNotificationsJob.class);
-    private SOSHibernateConnection connection;
+	private static final Logger LOGGER = LoggerFactory.getLogger(ResetNotificationsJob.class);
+	private SOSHibernateFactory factory;
+	private SOSHibernateStatelessConnection connection;
 
-    public ResetNotificationsJob() {
-        super(new ResetNotificationsJobOptions());
-    }
+	public ResetNotificationsJob() {
+		super(new ResetNotificationsJobOptions());
+	}
 
-    public void init() throws Exception {
-        final String methodName = "ResetNotificationsJob::init";
+	public void init() throws Exception {
+		final String methodName = "ResetNotificationsJob::init";
 
-        LOGGER.debug(methodName);
+		LOGGER.debug(methodName);
 
-        try {
-//            connection = new SOSHibernateConnection(getOptions().hibernate_configuration_file.getValue());
-//            connection.setAutoCommit(getOptions().connection_autocommit.value());
-//            connection.setIgnoreAutoCommitTransactions(true);
-//            connection.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
-//            connection.setUseOpenStatelessSession(true);
-//            connection.addClassMapping(DBLayer.getNotificationClassMapping());
-//            connection.connect();
-        } catch (Exception ex) {
-            throw new Exception(String.format("reporting connection: %s", ex.toString()));
-        }
-    }
+		try {
+			factory = new SOSHibernateFactory(getOptions().hibernate_configuration_file.getValue());
+			factory.setAutoCommit(getOptions().connection_autocommit.value());
+			factory.setTransactionIsolation(getOptions().connection_transaction_isolation.value());
+			factory.addClassMapping(DBLayer.getNotificationClassMapping());
+			factory.build();
+		} catch (Exception ex) {
+			throw new Exception(String.format("reporting connection: %s", ex.toString()));
+		}
+	}
 
-    public void exit() {
-        if (connection != null) {
-            connection.disconnect();
-        }
-    }
+	public void openSession() throws Exception {
+		connection = new SOSHibernateStatelessConnection(factory);
+		connection.connect();
+	}
 
-    public ResetNotificationsJob execute() throws Exception {
-        final String methodName = "ResetNotificationsJob::execute";
+	public void closeSession() throws Exception {
+		if (connection != null) {
+			connection.disconnect();
+		}
+	}
 
-        LOGGER.debug(methodName);
+	public void exit() {
+		if (factory != null) {
+			factory.close();
+		}
+	}
 
-        try {
-            getOptions().checkMandatory();
-            LOGGER.debug(getOptions().toString());
+	public ResetNotificationsJob execute() throws Exception {
+		final String methodName = "ResetNotificationsJob::execute";
 
-            ResetNotificationsModel model = new ResetNotificationsModel(connection, getOptions());
-            model.process();
-        } catch (Exception e) {
-            LOGGER.error(String.format("%s: %s", methodName, e.getMessage()), e);
-            throw e;
-        }
+		LOGGER.debug(methodName);
 
-        return this;
-    }
+		try {
+			getOptions().checkMandatory();
+			LOGGER.debug(getOptions().toString());
 
-    public ResetNotificationsJobOptions getOptions() {
+			ResetNotificationsModel model = new ResetNotificationsModel(connection, getOptions());
+			model.process();
+		} catch (Exception e) {
+			LOGGER.error(String.format("%s: %s", methodName, e.getMessage()), e);
+			throw e;
+		}
 
-        if (objOptions == null) {
-            objOptions = new ResetNotificationsJobOptions();
-        }
-        return objOptions;
-    }
+		return this;
+	}
+
+	public ResetNotificationsJobOptions getOptions() {
+
+		if (objOptions == null) {
+			objOptions = new ResetNotificationsJobOptions();
+		}
+		return objOptions;
+	}
 
 }

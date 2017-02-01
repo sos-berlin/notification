@@ -1,10 +1,8 @@
 package com.sos.scheduler.notification.jobs.result;
 
-import java.io.File;
-
 import org.apache.log4j.Logger;
 
-import sos.scheduler.job.JobSchedulerJobAdapter;  // Super-Class for JobScheduler Java-API-Jobs
+import sos.scheduler.job.JobSchedulerJobAdapter; 
 import sos.spooler.Order;
 import sos.spooler.Variable_set;
 import sos.util.SOSString;
@@ -28,14 +26,15 @@ public class StoreResultsJobJSAdapterClass extends JobSchedulerJobAdapter  {
 	    job.setJSJobUtilites(this);
 		
 	    if(SOSString.isEmpty(options.scheduler_notification_hibernate_configuration_file.getValue())){
-	    	File f = new File(new File(spooler.configuration_directory()).getParent(), "hibernate.cfg.xml");
-	    	options.scheduler_notification_hibernate_configuration_file.setValue(f.getAbsolutePath());
+	    	options.scheduler_notification_hibernate_configuration_file.setValue(getHibernateConfigurationScheduler().toString());
 	    }
 	    job.init();
+	    job.openSession();
 	}
 
 	public void exit() throws Exception {
 		if(job != null){
+			job.closeSession();
 			job.exit();
 		}
 	}

@@ -3,6 +3,7 @@ package com.sos.scheduler.notification.model;
 import org.apache.log4j.Logger;
 
 import com.sos.hibernate.classes.SOSHibernateConnection;
+import com.sos.hibernate.classes.SOSHibernateStatelessConnection;
 import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.jobs.history.CheckHistoryJobOptions;
 import com.sos.scheduler.notification.model.history.CheckHistoryModel;
@@ -10,7 +11,7 @@ import com.sos.scheduler.notification.model.history.CheckHistoryModel;
 public class CheckHistoryModelTest {
 	private static Logger		logger			= Logger.getLogger(CheckHistoryModelTest.class);
 	
-	private SOSHibernateConnection connection;
+	private SOSHibernateStatelessConnection connection;
 	private CheckHistoryJobOptions options;
 	
 	public CheckHistoryModelTest(CheckHistoryJobOptions opt){

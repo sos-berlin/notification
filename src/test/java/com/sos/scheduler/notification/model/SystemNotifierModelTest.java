@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sos.hibernate.classes.SOSHibernateConnection;
+import com.sos.hibernate.classes.SOSHibernateStatelessConnection;
 import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.jobs.notifier.SystemNotifierJobOptions;
 import com.sos.scheduler.notification.model.notifier.SystemNotifierModel;
@@ -16,7 +16,7 @@ import com.sos.scheduler.notification.model.notifier.SystemNotifierModel;
 public class SystemNotifierModelTest {
 	private static Logger		logger			= LoggerFactory.getLogger(SystemNotifierModelTest.class);
 	
-	private SOSHibernateConnection connection;
+	private SOSHibernateStatelessConnection connection;
 	private SystemNotifierJobOptions options;
 	
 	public SystemNotifierModelTest(SystemNotifierJobOptions opt){
