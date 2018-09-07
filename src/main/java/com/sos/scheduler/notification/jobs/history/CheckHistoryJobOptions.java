@@ -124,4 +124,36 @@ public class CheckHistoryJobOptions extends NotificationJobOptionsSuperClass {
     public void setbatch_size(SOSOptionInteger val) {
         this.batch_size = val;
     }
+    
+    @JSOptionDefinition(name = "max_execution_time", description = "", key = "max_execution_time", type = "SOSOptionInteger", mandatory = false)
+    public SOSOptionInteger max_execution_time = new SOSOptionInteger(this, conClassName + ".max_execution_time", // HashMap-Key
+            "", // Titel
+            "-1", // InitValue
+            "-1", // DefaultValue
+            false // isMandatory
+    );
+
+    public SOSOptionInteger getmax_execution_time() {
+        return max_execution_time;
+    }
+
+    public void setmax_execution_time(SOSOptionInteger val) {
+        this.max_execution_time = val;
+    }
+
+    @JSOptionDefinition(name = "max_execution_time_exit", description = "", key = "max_execution_time_exit", type = "SOSOptionInteger", mandatory = false)
+    public SOSOptionInteger max_execution_time_exit = new SOSOptionInteger(this, conClassName + ".max_execution_time_exit", // HashMap-Key
+            "", // Titel
+            "5", // InitValue
+            "5", // DefaultValue
+            false // isMandatory
+    );
+
+    public SOSOptionInteger getmax_execution_time_exit() {
+        return max_execution_time_exit;
+    }
+
+    public void setmax_execution_time_exit(SOSOptionInteger val) {
+        this.max_execution_time_exit = val;
+    }
 }
