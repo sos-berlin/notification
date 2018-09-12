@@ -586,7 +586,7 @@ public class DBLayerSchedulerMon extends DBLayer {
                                 q.setParameter("error", osh.getStepError());
                                 q.setParameter("errorCode", osh.getStepErrorCode());
                                 q.setParameter("errorText", osh.getStepErrorText());
-                                q.setParameter("returnCode", osh.getTaskExitCode());
+                                q.setParameter("returnCode", new Long(osh.getTaskExitCode() == null ? 0 : osh.getTaskExitCode()));
                                 q.setParameter("modified", DBLayer.getCurrentDateTime());
                                 result += q.executeUpdate();
                             }
