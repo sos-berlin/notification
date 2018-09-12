@@ -268,7 +268,7 @@ public class DBLayerSchedulerMon extends DBLayer {
         return cr;
     }
 
-    public Criteria getSchedulerHistorySteps(Optional<Integer> fetchSize, Long historyId, Long step) throws Exception {
+    public Criteria getSchedulerHistoryStep(Optional<Integer> fetchSize, Long historyId, Long step) throws Exception {
         Criteria cr = getConnection().createCriteria(SchedulerOrderStepHistoryDBItem.class, "osh");
         // join
         cr.createAlias(OSH_SCHEDULER_ORDER_HISTORY_DB_ITEM, "oh");
@@ -303,8 +303,8 @@ public class DBLayerSchedulerMon extends DBLayer {
         pl.add(Projections.property(H_EXIT_CODE).as(TASK_EXIT_CODE));
         cr.setProjection(pl);
         // where
-        cr.add(Restrictions.le(OSH_ID_HISTORYID, historyId));
-        cr.add(Restrictions.le(OSH_ID_STEP, step));
+        cr.add(Restrictions.eq(OSH_ID_HISTORYID, historyId));
+        cr.add(Restrictions.eq(OSH_ID_STEP, step));
         cr.setResultTransformer(Transformers.aliasToBean(DBItemNotificationSchedulerHistoryOrderStep.class));
         cr.setReadOnly(true);
         if (fetchSize.isPresent()) {
@@ -572,7 +572,7 @@ public class DBLayerSchedulerMon extends DBLayer {
                         readCount++;
                         flushScrollableResults(readCount);
                         DBItemSchedulerMonNotifications notification = (DBItemSchedulerMonNotifications) notificationProcessor.get();
-                        Criteria historyCriteria = getSchedulerHistorySteps(fetchSize, notification.getOrderHistoryId(), notification.getStep());
+                        Criteria historyCriteria = getSchedulerHistoryStep(fetchSize, notification.getOrderHistoryId(), notification.getStep());
                         ResultSet historyResultSet = historyProcessor.createResultSet(DBItemNotificationSchedulerHistoryOrderStep.class, historyCriteria,
                                 ScrollMode.FORWARD_ONLY, fetchSize);
                         try {
