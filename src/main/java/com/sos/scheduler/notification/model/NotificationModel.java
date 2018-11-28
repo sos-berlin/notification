@@ -3,6 +3,8 @@ package com.sos.scheduler.notification.model;
 import java.io.File;
 import java.util.Locale;
 
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.Period;
@@ -11,11 +13,11 @@ import org.joda.time.format.PeriodFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sos.util.SOSString;
-
 import com.sos.hibernate.classes.SOSHibernateConnection;
 import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
 import com.sos.scheduler.notification.helper.RegExFilenameFilter;
+
+import sos.util.SOSString;
 
 public class NotificationModel {
 
@@ -111,6 +113,17 @@ public class NotificationModel {
             }
         }
         return minutes;
+    }
+    
+    public static String toString(Object o) {
+        if (o == null) {
+            return null;
+        }
+        try {
+            return ReflectionToStringBuilder.toString(o, ToStringStyle.SHORT_PREFIX_STYLE);
+        } catch (Throwable t) {
+        }
+        return o.toString();
     }
 
 }

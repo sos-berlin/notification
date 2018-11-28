@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sos.hibernate.classes.SOSHibernateConnection;
-import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
 import com.sos.scheduler.notification.jobs.cleanup.CleanupNotificationsJobOptions;
 import com.sos.scheduler.notification.model.INotificationModel;
@@ -32,9 +31,7 @@ public class CleanupNotificationsModel extends NotificationModel implements INot
 
             int minutes = NotificationModel.resolveAge2Minutes(this.options.age.getValue());
             Date date = DBLayerSchedulerMon.getCurrentDateTimeMinusMinutes(minutes);
-
-            logger.info(String.format("%s: age = %s, delete where created <= %s minutes ago (%s)", method, this.options.age.getValue(), minutes, DBLayer.getDateAsString(date)));
-
+            
             getDbLayer().getConnection().beginTransaction();
             getDbLayer().cleanupNotifications(date);
             getDbLayer().getConnection().commit();

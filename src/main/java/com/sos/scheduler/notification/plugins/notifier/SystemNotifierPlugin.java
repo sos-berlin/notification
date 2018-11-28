@@ -52,9 +52,9 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
     }
 
     @Override
-    public int notifySystem(Spooler spooler, SystemNotifierJobOptions options, DBLayerSchedulerMon dbLayer, DBItemSchedulerMonNotifications notification,
-            DBItemSchedulerMonSystemNotifications systemNotification, DBItemSchedulerMonChecks check, EServiceStatus status, EServiceMessagePrefix prefix)
-            throws Exception {
+    public int notifySystem(Spooler spooler, SystemNotifierJobOptions options, DBLayerSchedulerMon dbLayer,
+            DBItemSchedulerMonNotifications notification, DBItemSchedulerMonSystemNotifications systemNotification, DBItemSchedulerMonChecks check,
+            EServiceStatus status, EServiceMessagePrefix prefix) throws Exception {
         return 0;
     }
 
@@ -68,32 +68,19 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
         /** e.g Nagios 0- OK 1-Warning 2-Critical 3-Unknown */
         String serviceStatus = "0";
         if (status.equals(EServiceStatus.OK)) {
-            if (getNotificationMonitor().getServiceStatusOnSuccess() != null) {
-                serviceStatus = getNotificationMonitor().getServiceStatusOnSuccess();
-            } else {
+            if (SOSString.isEmpty(getNotificationMonitor().getServiceStatusOnSuccess())) {
                 serviceStatus = EServiceStatus.OK.name();
+            } else {
+                serviceStatus = getNotificationMonitor().getServiceStatusOnSuccess();
             }
         } else {
-            if (this.getNotificationMonitor().getServiceStatusOnError() != null) {
-                serviceStatus = getNotificationMonitor().getServiceStatusOnError();
-            } else {
+            if (SOSString.isEmpty(getNotificationMonitor().getServiceStatusOnError())) {
                 serviceStatus = EServiceStatus.CRITICAL.name();
+            } else {
+                serviceStatus = getNotificationMonitor().getServiceStatusOnError();
             }
         }
-        logger.debug(String.format("%s: serviceStatus = %s", method, serviceStatus));
-
         return serviceStatus;
-    }
-
-    public String getServiceMessagePrefixValue(EServiceMessagePrefix prefix) {
-        String method = "getServiceMessagePrefixValue";
-        String servicePrefix = "";
-        if (prefix != null && !prefix.equals(EServiceMessagePrefix.NONE)) {
-            servicePrefix = prefix.name() + " ";
-        }
-
-        logger.debug(String.format("%s: servicePrefix = %s", method, servicePrefix));
-        return servicePrefix;
     }
 
     private void setTableFields(DbItem notification, DbItem systemNotification, DbItem check) throws Exception {
@@ -113,12 +100,12 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
                 VARIABLE_TABLE_PREFIX_NOTIFICATIONS + "_ORDER_END_TIME");
         setTableFieldElapsed(VARIABLE_TABLE_PREFIX_NOTIFICATIONS + "_TASK_TIME_ELAPSED", VARIABLE_TABLE_PREFIX_NOTIFICATIONS + "_TASK_START_TIME",
                 VARIABLE_TABLE_PREFIX_NOTIFICATIONS + "_TASK_END_TIME");
-        setTableFieldElapsed(VARIABLE_TABLE_PREFIX_NOTIFICATIONS + "_ORDER_STEP_TIME_ELAPSED", VARIABLE_TABLE_PREFIX_NOTIFICATIONS + "_ORDER_STEP_START_TIME",
-                VARIABLE_TABLE_PREFIX_NOTIFICATIONS + "_ORDER_STEP_END_TIME");
+        setTableFieldElapsed(VARIABLE_TABLE_PREFIX_NOTIFICATIONS + "_ORDER_STEP_TIME_ELAPSED", VARIABLE_TABLE_PREFIX_NOTIFICATIONS
+                + "_ORDER_STEP_START_TIME", VARIABLE_TABLE_PREFIX_NOTIFICATIONS + "_ORDER_STEP_END_TIME");
 
         // SYSNOTOFICATIONS
-        setTableFieldElapsed(VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS + "_STEP_TIME_ELAPSED", VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS + "_STEP_FROM_START_TIME",
-                VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS + "_STEP_TO_END_TIME");
+        setTableFieldElapsed(VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS + "_STEP_TIME_ELAPSED", VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS
+                + "_STEP_FROM_START_TIME", VARIABLE_TABLE_PREFIX_SYSNOTIFICATIONS + "_STEP_TO_END_TIME");
 
         // CHECKS
         setTableFieldElapsed(VARIABLE_TABLE_PREFIX_CHECKS + "_STEP_TIME_ELAPSED", VARIABLE_TABLE_PREFIX_CHECKS + "_STEP_FROM_START_TIME",
@@ -241,14 +228,13 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
         if (cmd == null) {
             return null;
         }
-       
+
         String normalized = varValue == null ? "" : normalizeVarValue(varValue);
-        if(isWindows){
-        	cmd = cmd.replaceAll("%(?i)" + varName + "%", Matcher.quoteReplacement(normalized));
-        }
-        else{
-         	cmd = cmd.replaceAll("\\$\\{(?i)" + varName + "\\}", Matcher.quoteReplacement(normalized));
-         	cmd = cmd.replaceAll("\\$(?i)" + varName, Matcher.quoteReplacement(normalized));
+        if (isWindows) {
+            cmd = cmd.replaceAll("%(?i)" + varName + "%", Matcher.quoteReplacement(normalized));
+        } else {
+            cmd = cmd.replaceAll("\\$\\{(?i)" + varName + "\\}", Matcher.quoteReplacement(normalized));
+            cmd = cmd.replaceAll("\\$(?i)" + varName, Matcher.quoteReplacement(normalized));
         }
         return cmd;
     }
@@ -257,9 +243,9 @@ public class SystemNotifierPlugin implements ISystemNotifierPlugin {
         if (command == null) {
             return;
         }
-        
+
         String normalized = varValue == null ? "" : normalizeVarValue(varValue);
-        //2 replacements - compatibility, using of the old {var} and new ${var} syntax
+        // 2 replacements - compatibility, using of the old {var} and new ${var} syntax
         command = command.replaceAll("\\$\\{(?i)" + varName + "\\}", Matcher.quoteReplacement(normalized));
         command = command.replaceAll("\\{(?i)" + varName + "\\}", Matcher.quoteReplacement(normalized));
     }

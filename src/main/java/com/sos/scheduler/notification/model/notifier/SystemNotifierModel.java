@@ -2,6 +2,7 @@ package com.sos.scheduler.notification.model.notifier;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,14 +12,11 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import sos.spooler.Spooler;
-import sos.util.SOSString;
-import sos.xml.SOSXMLXPath;
-
 import com.sos.hibernate.classes.SOSHibernateConnection;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonChecks;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonNotifications;
 import com.sos.scheduler.notification.db.DBItemSchedulerMonSystemNotifications;
+import com.sos.scheduler.notification.db.DBItemSchedulerMonSystemResults;
 import com.sos.scheduler.notification.db.DBLayer;
 import com.sos.scheduler.notification.db.DBLayerSchedulerMon;
 import com.sos.scheduler.notification.helper.CounterSystemNotifier;
@@ -35,18 +33,17 @@ import com.sos.scheduler.notification.model.INotificationModel;
 import com.sos.scheduler.notification.model.NotificationModel;
 import com.sos.scheduler.notification.plugins.notifier.ISystemNotifierPlugin;
 
+import sos.spooler.Spooler;
+import sos.util.SOSString;
+import sos.xml.SOSXMLXPath;
+
 public class SystemNotifierModel extends NotificationModel implements INotificationModel {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemNotifierModel.class);
-    private static final String THREE_PARAMS_LOGGING = "%s:[%s][%s] - %s";
-    private static final String METHOD_LOGGING = "%s: --- ";
-    private static final String CALL_PLUGIN_LOGGING = "%s:[%s][%s][%s]. notification %s of %s. call plugin %s";
-    private static final String CREATE_NOTIFICATION_LOGGING = "%s: create system notification: systemId = %s, serviceName = %s, notifications = %s, "
-            + "notificationId = %s, checkId = %s, stepFrom = %s, stepTo = %s";
-    private static final String SENT_LOGGING = "%s: sended = %s, error = %s, skipped = %s (total checked = %s)";
-    private static final String UPDATE_NOTIFICATION_LOGGING = "%s: update system notification: id = %s, systemId = %s, serviceName = %s, notifications = %s, "
-            + "notificationId = %s, checkId = %s, stepFrom = %s, stepTo = %s";
-    private static final String LAST_STEP_IS_NULL = "lastStepForNotification is NULL";
+    private static final boolean isDebugEnabled = LOGGER.isDebugEnabled();
+    private static final String THREE_PARAMS_LOGGING = "[%s][%s][%s]-%s";
+    private static final String CALL_PLUGIN_LOGGING = "[%s][%s][%s][%s]notification %s of %s. call plugin %s";
+    private static final String SENT_LOGGING = "[%s]sended=%s, error=%s, skipped=%s (total checked=%s)";
     private Spooler spooler;
     private SystemNotifierJobOptions options;
     private String systemId;
@@ -57,6 +54,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
     private ArrayList<ElementNotificationTimerRef> monitorOnSuccessTimers;
     private Optional<Integer> largeResultFetchSize = Optional.empty();
     private CounterSystemNotifier counter;
+    private ArrayList<Long> handledByNotifyAgain;
 
     public SystemNotifierModel(SOSHibernateConnection conn, SystemNotifierJobOptions opt, Spooler sp) throws Exception {
         super(conn);
@@ -87,25 +85,24 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         String method = "initConfig";
         File schemaFile = new File(options.schema_configuration_file.getValue());
         if (!schemaFile.exists()) {
-            throw new Exception(String.format("%s: schema file not found: %s", method, schemaFile.getCanonicalPath()));
+            throw new Exception(String.format("[%s][schema file not found]%s", method, schemaFile.getCanonicalPath()));
         }
         systemFile = new File(this.options.system_configuration_file.getValue());
         if (!systemFile.exists()) {
-            throw new Exception(String.format("%s: system configuration file not found: %s", method, systemFile.getCanonicalPath()));
+            throw new Exception(String.format("[%s][system configuration file not found]%s", method, systemFile.getCanonicalPath()));
         }
-        LOGGER.debug(String.format("%s: read configuration file %s", method, systemFile.getCanonicalPath()));
         SOSXMLXPath xpath = new SOSXMLXPath(systemFile.getCanonicalPath());
         initMonitorObjects();
         systemId = NotificationXmlHelper.getSystemMonitorNotificationSystemId(xpath);
         if (SOSString.isEmpty(systemId)) {
             throw new Exception(String.format("systemId is NULL (configured SystemMonitorNotification/@system_id is not found)"));
         }
-        LOGGER.info(String.format("%s: system id = %s (%s)", method, systemId, systemFile.getCanonicalPath()));
 
         NodeList monitors = NotificationXmlHelper.selectNotificationMonitorDefinitions(xpath);
         setMonitorObjects(xpath, monitors);
 
-        LOGGER.info(String.format("%s: found configured JobChains = %s, Jobs = %s", method, monitorJobChains.size(), monitorJobs.size()));
+        LOGGER.info(String.format("[%s][%s][jobChains=%s][jobs=%s]%s", method, systemId, monitorJobChains.size(), monitorJobs.size(), systemFile
+                .getCanonicalPath()));
     }
 
     private void setMonitorObjects(SOSXMLXPath xpath, NodeList monitors) throws Exception {
@@ -131,15 +128,15 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         }
     }
 
-    private void executeNotifyTimer(String systemId, DBItemSchedulerMonChecks check, ElementNotificationTimerRef timer, boolean isNotifyOnErrorService)
-            throws Exception {
+    private void executeNotifyTimer(String systemId, DBItemSchedulerMonChecks check, ElementNotificationTimerRef timer,
+            boolean isNotifyOnErrorService) throws Exception {
         // Output indent
         String method = "  executeNotifyTimer";
         String serviceName = (isNotifyOnErrorService) ? timer.getMonitor().getServiceNameOnError() : timer.getMonitor().getServiceNameOnSuccess();
         EServiceStatus pluginStatus = (isNotifyOnErrorService) ? EServiceStatus.CRITICAL : EServiceStatus.OK;
         DBItemSchedulerMonNotifications notification = getDbLayer().getNotification(check.getNotificationId());
         if (notification == null) {
-            throw new Exception(String.format("%s: serviceName = %s, notification id = %s not found", method, serviceName, check.getNotificationId()));
+            throw new Exception(String.format("[%s]serviceName=%s, notification id=%s not found", method, serviceName, check.getNotificationId()));
         }
         String stepFrom = check.getStepFrom();
         String stepTo = check.getStepTo();
@@ -148,8 +145,9 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         Long notifications = timer.getNotifications();
         if (notifications < 1) {
             counter.addSkip();
-            LOGGER.debug(String.format("%s: serviceName = %s. skip notify timer (notifications is %s): check.id = %s, schedulerId = %s, jobChain = %s", method,
-                    serviceName, notifications, check.getId(), check.getSchedulerId(), check.getJobChain()));
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][%s][skip]notifications %s < 1", method, serviceName, notifications));
+            }
             return;
         }
         DBItemSchedulerMonSystemNotifications sm = null;
@@ -157,55 +155,77 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         boolean isNew = false;
         if (timer.getNotifyOnError()) {
             sm = getDbLayer().getSystemNotification(systemId, serviceName, notification.getId(), check.getId(),
-                    DBLayer.NOTIFICATION_OBJECT_TYPE_JOB_CHAIN, !isNotifyOnErrorService, stepFrom, stepTo, returnCodeFrom,
-                    returnCodeTo);
+                    DBLayer.NOTIFICATION_OBJECT_TYPE_JOB_CHAIN, !isNotifyOnErrorService, stepFrom, stepTo, returnCodeFrom, returnCodeTo);
+
         } else {
             List<DBItemSchedulerMonSystemNotifications> result = getDbLayer().getSystemNotifications(systemId, serviceName, notification.getId());
-            LOGGER.debug(String.format("%s: found %s system notifications in the db for systemId = %s, serviceName = %s, notificationId = %s)", method,
-                    result.size(), systemId, serviceName, notification.getId()));
-            for (int i = 0; i < result.size(); i++) {
-                DBItemSchedulerMonSystemNotifications resultSm = result.get(i);
-                if (resultSm.getCheckId().equals(new Long(0))) {
-                    smNotTimer = resultSm;
+            if (result == null || result.size() == 0) {
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("[%s][%s][result ist null or empty", method, serviceName));
                 }
-                if (resultSm.getCheckId().equals(check.getId())) {
-                    sm = resultSm;
+            } else {
+                for (int i = 0; i < result.size(); i++) {
+                    DBItemSchedulerMonSystemNotifications resultSm = result.get(i);
+
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("[%s][result][%s]%s", method, i, NotificationModel.toString(resultSm)));
+                    }
+
+                    if (resultSm.getCheckId().equals(new Long(0))) {
+                        smNotTimer = resultSm;
+                    }
+                    if (resultSm.getCheckId().equals(check.getId())) {
+                        sm = resultSm;
+                    }
                 }
             }
         }
         if (smNotTimer != null) {
-            if (!(smNotTimer.getCurrentNotification().equals(new Long(0)) || (smNotTimer.getCurrentNotification() > 0 && smNotTimer.getRecovered()))) {
+            if (!(smNotTimer.getCurrentNotification().equals(new Long(0)) || (smNotTimer.getCurrentNotification() > 0 && smNotTimer
+                    .getRecovered()))) {
                 counter.addSkip();
-                LOGGER.debug(String.format(
-                        "%s: serviceName = %s. skip notify timer(notification has the error): smNotTimer.id = %s, smNotTimer.recovered = %s, "
-                                + "smNotTimer.notifications = %s", method, serviceName, smNotTimer.getId(), smNotTimer.getRecovered(),
-                        smNotTimer.getCurrentNotification()));
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("[%s][%s][skip][notification has the error]%s", method, serviceName, NotificationModel.toString(
+                            smNotTimer)));
+                }
                 return;
             }
         }
         if (sm == null) {
             isNew = true;
             sm = this.getDbLayer().createSystemNotification(systemId, serviceName, notification.getId(), check.getId(), returnCodeFrom, returnCodeTo,
-                    DBLayer.NOTIFICATION_OBJECT_TYPE_JOB_CHAIN, stepFrom, stepTo, notification.getOrderStartTime(),
-                    notification.getOrderEndTime(), new Long(0), notifications, false, false, true);
+                    DBLayer.NOTIFICATION_OBJECT_TYPE_JOB_CHAIN, stepFrom, stepTo, notification.getOrderStartTime(), notification.getOrderEndTime(),
+                    new Long(0), notifications, false, false, true);
         }
+
+        if (isDebugEnabled) {
+            LOGGER.debug(String.format("[%s][%s][isNew=%s]%s", method, serviceName, isNew, NotificationModel.toString(sm)));
+        }
+
         if (sm.getMaxNotifications()) {
             counter.addSkip();
-            LOGGER.debug(String.format("%s: skip notify timer (count notifications was reached): id = %s, serviceName = %s, notifications = %s, "
-                    + "maxNotifictions = %s", method, sm.getId(), sm.getServiceName(), sm.getCurrentNotification(), sm.getMaxNotifications()));
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][skip]maxNotifications=true", method));
+            }
             return;
         }
         if (sm.getAcknowledged()) {
             counter.addSkip();
-            LOGGER.debug(String.format("%s: skip notify timer (is acknowledged): id = %s, serviceName = %s, notifications = %s, acknowledged = %s", method,
-                    sm.getId(), sm.getServiceName(), sm.getCurrentNotification(), sm.getAcknowledged()));
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][skip]acknowledged=true", method));
+            }
             return;
         }
         if (sm.getCurrentNotification() >= notifications) {
-            setMaxNotifications(isNew, sm);
+            if (!isNew) {
+                closeSystemNotification(sm, notification.getOrderEndTime());
+            }
             counter.addSkip();
-            LOGGER.debug(String.format("%s: skip notify timer (count notifications was reached): id = %s, serviceName = %s, currentNotification = %s", method,
-                    sm.getId(), sm.getServiceName(), sm.getCurrentNotification()));
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][skip][%s]count notifications was reached", method, notifications));
+            }
             return;
         }
 
@@ -214,17 +234,17 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             sm.setSuccess(true);
             sm.setModified(DBLayer.getCurrentDateTime());
             sm.setNotifications(notifications);
-            if (isNew) {
-                LOGGER.debug(String.format(CREATE_NOTIFICATION_LOGGING, method, sm.getSystemId(), sm.getServiceName(), sm.getCurrentNotification(),
-                        sm.getNotificationId(), sm.getCheckId(), sm.getStepFrom(), sm.getStepTo()));
-            } else {
-                LOGGER.debug(String.format(UPDATE_NOTIFICATION_LOGGING, method, sm.getId(), sm.getSystemId(), sm.getServiceName(), sm.getCurrentNotification(),
-                        sm.getNotificationId(), sm.getCheckId(), sm.getStepFrom(), sm.getStepTo()));
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][%s][isNew=%s]%s", method, serviceName, isNew, NotificationModel.toString(sm)));
+                LOGGER.debug(String.format("[%s][%s][isNew=%s]%s", method, serviceName, isNew, NotificationModel.toString(notification)));
+                LOGGER.debug(String.format("[%s][%s][isNew=%s]%s", method, serviceName, isNew, NotificationModel.toString(check)));
             }
+
             ISystemNotifierPlugin pl = timer.getMonitor().getPluginObject();
-            LOGGER.info(String.format(METHOD_LOGGING, method));
-            LOGGER.info(String.format(CALL_PLUGIN_LOGGING, method, "notifyOnTimer", serviceName, notification.getJobChainName(), sm.getCurrentNotification(),
-                    sm.getNotifications(), pl.getClass().getSimpleName()));
+            LOGGER.info("----------------------------------------------------------------");
+            LOGGER.info(String.format(CALL_PLUGIN_LOGGING, method, "notifyOnTimer", serviceName, notification.getJobChainName(), sm
+                    .getCurrentNotification(), sm.getNotifications(), pl.getClass().getSimpleName()));
             pl.init(timer.getMonitor());
             pl.notifySystem(getSpooler(), options, getDbLayer(), notification, sm, check, pluginStatus, EServiceMessagePrefix.TIMER);
             getDbLayer().getConnection().beginTransaction();
@@ -235,6 +255,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             }
             getDbLayer().getConnection().commit();
             counter.addSuccess();
+            LOGGER.info("----------------------------------------------------------------");
         } catch (Exception ex) {
             try {
                 getDbLayer().getConnection().rollback();
@@ -246,25 +267,27 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         }
     }
 
-    private void setMaxNotifications(boolean isNew, DBItemSchedulerMonSystemNotifications sm) throws Exception {
-        if (!isNew) {
-            sm.setMaxNotifications(true);
-            sm.setModified(DBLayer.getCurrentDateTime());
-            getDbLayer().getConnection().beginTransaction();
-            getDbLayer().getConnection().update(sm);
-            getDbLayer().getConnection().commit();
-        }
+    private void closeSystemNotification(DBItemSchedulerMonSystemNotifications sm, Date stepToEndTime) throws Exception {
+        sm.setStepToEndTime(stepToEndTime);
+        sm.setMaxNotifications(true);
+        sm.setModified(DBLayer.getCurrentDateTime());
+        getDbLayer().getConnection().beginTransaction();
+        getDbLayer().getConnection().update(sm);
+        getDbLayer().getConnection().commit();
     }
 
-    private boolean checkDoNotificationByReturnCodes(DBItemSchedulerMonNotifications notification, String serviceName, String notifyMsg, String configuredName,
-            String configuredReturnCodeFrom, String configuredReturnCodeTo) {
-        String method = "checkDoNotificationByReturnCodes";
+    private boolean checkDoNotifyByReturnCodes(DBItemSchedulerMonNotifications notification, String serviceName, String notifyMsg,
+            String configuredName, String configuredReturnCodeFrom, String configuredReturnCodeTo) {
+        String method = "checkDoNotifyByReturnCodes";
 
         if (notification.getOrderStepEndTime() == null) {
             counter.addSkip();
-            LOGGER.debug(String.format(
-                    "%s:[%s][%s]. skip notify (step is not completed - step end time is empty): notification.id = %s, notification.jobName = %s", method,
-                    notifyMsg, serviceName, notification.getId(), notification.getJobName()));
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][%s][%s][skip][step is not completed - step end time is empty]%s", method, notifyMsg, serviceName,
+                        NotificationModel.toString(notification)));
+            }
+
             return false;
         }
 
@@ -272,14 +295,15 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             try {
                 Long rc = Long.parseLong(configuredReturnCodeFrom);
                 if (notification.getReturnCode() < rc) {
-                    LOGGER.debug(String
-                            .format("%s:[%s][%s]. skip notify (return code (%s) less than configured return_code_from (%s)): notification.id = %s, notification.step = %s, notification.jobName = %s, notification.jobChainName = %s",
-                                    method, notifyMsg, serviceName, notification.getReturnCode(), configuredReturnCodeFrom, notification.getId(),
-                                    notification.getOrderStepState(), notification.getJobName(), notification.getJobChainName()));
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("[%s][%s][%s][skip][return code (%s) less than configured return_code_from (%s)]%s", method,
+                                notifyMsg, serviceName, notification.getReturnCode(), configuredReturnCodeFrom, NotificationModel.toString(
+                                        notification)));
+                    }
                     return false;
                 }
             } catch (Exception ex) {
-                LOGGER.warn(String.format("%s:[%s][%s][%s]. skip notify (configured return_code_from \"%s\" is not a valid integer value): %s", method,
+                LOGGER.warn(String.format("[%s][%s][%s][%s][skip][configured return_code_from \"%s\" is not a valid integer value]%s", method,
                         notifyMsg, serviceName, configuredName, configuredReturnCodeFrom, ex.getMessage()));
                 return false;
             }
@@ -288,14 +312,15 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             try {
                 Long rc = Long.parseLong(configuredReturnCodeTo);
                 if (notification.getReturnCode() > rc) {
-                    LOGGER.debug(String
-                            .format("%s:[%s][%s]. skip notify (return code (%s) greater than configured return_code_to (%s)): notification.id = %s, notification.step = %s, notification.jobName = %s, notification.jobChainName = %s",
-                                    method, notifyMsg, serviceName, notification.getReturnCode(), configuredReturnCodeTo, notification.getId(),
-                                    notification.getOrderStepState(), notification.getJobName(), notification.getJobChainName()));
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("[%s][%s][%s][skip][return code (%s) greater than configured return_code_to (%s)]%s", method,
+                                notifyMsg, serviceName, notification.getReturnCode(), configuredReturnCodeTo, NotificationModel.toString(
+                                        notification)));
+                    }
                     return false;
                 }
             } catch (Exception ex) {
-                LOGGER.warn(String.format("%s:[%s][%s][%s]. skip notify (configured return_code_to \"%s\" is not a valid integer value): %s", method,
+                LOGGER.warn(String.format("[%s][%s][%s][%s][skip][configured return_code_to \"%s\" is not a valid integer value]%s", method,
                         notifyMsg, serviceName, configuredName, configuredReturnCodeTo, ex.getMessage()));
                 return false;
             }
@@ -304,19 +329,21 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         return true;
     }
 
-    private boolean checkDoNotificationTimer(DBItemSchedulerMonChecks check, ElementNotificationTimerRef timer) {
-        String method = "  checkDoNotificationTimer";
+    private boolean checkDoNotifyTimer(int currentCounter, DBItemSchedulerMonChecks check, ElementNotificationTimerRef timer) {
+        String method = "  [" + currentCounter + "][checkDoNotifyTimer]";
         boolean notify = true;
         String ref = timer.getRef();
         if (!check.getName().equals(ref)) {
             notify = false;
         }
-        LOGGER.debug(String.format("%s: %s(name = %s) and configured(ref = %s)", method, notify ? "ok. check db " : "skip. ", check.getName(), ref));
+        if (isDebugEnabled) {
+            LOGGER.debug(String.format("%s[notify=%s][ref=%s]%s", method, notify, ref, NotificationModel.toString(check)));
+        }
         return notify;
     }
 
-    private boolean checkDoNotification(DBItemSchedulerMonNotifications notification, ElementNotificationJobChain jc) throws Exception {
-        String method = "  checkDoNotification";
+    private boolean checkDoNotify(int currentCounter, DBItemSchedulerMonNotifications notification, ElementNotificationJobChain jc) throws Exception {
+        String method = "  [" + currentCounter + "][checkDoNotify]";
         boolean notify = true;
         String schedulerId = jc.getSchedulerId();
         String jobChain = jc.getName();
@@ -324,27 +351,40 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             try {
                 if (!notification.getSchedulerId().matches(schedulerId)) {
                     notify = false;
+
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("%s[notify=%s][schedulerId not match][%s][%s]", method, notify, notification.getSchedulerId(),
+                                schedulerId));
+                    }
                 }
             } catch (Exception ex) {
-                throw new Exception(String.format("%s: check with configured scheduler_id = %s: %s", method, schedulerId, ex));
+                throw new Exception(String.format("%s[check with configured scheduler_id=%s]%s", method, schedulerId, ex));
             }
         }
         if (notify && !jobChain.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME)) {
             try {
                 if (!notification.getJobChainName().matches(jobChain)) {
                     notify = false;
+
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("%s[notify=%s][not match][%s][%s]", method, notify, notification.getJobChainName(), jobChain));
+                    }
+                } else {
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("%s[notify=%s][match][%s][%s][%s][%s]", method, notify, notification.getSchedulerId(), schedulerId,
+                                notification.getJobChainName(), jobChain));
+                    }
                 }
             } catch (Exception ex) {
-                throw new Exception(String.format("%s: check with configured scheduler_id = %s, name = %s: %s", method, schedulerId, jobChain, ex));
+                throw new Exception(String.format("%s[check with configured scheduler_id=%s, name=%s]%s", method, schedulerId, jobChain, ex));
             }
         }
-        LOGGER.debug(String.format("%s: %s(schedulerId = %s, jobChain = %s) and configured(schedulerId = %s, jobChain = %s)", method,
-                notify ? "ok. do check db " : "skip. ", notification.getSchedulerId(), notification.getJobChainName(), schedulerId, jobChain));
+
         return notify;
     }
 
-    private boolean checkDoNotification(DBItemSchedulerMonNotifications notification, ElementNotificationJob job) throws Exception {
-        String method = "  checkDoNotification";
+    private boolean checkDoNotify(int currentCounter, DBItemSchedulerMonNotifications notification, ElementNotificationJob job) throws Exception {
+        String method = "  [" + currentCounter + "][checkDoNotify]";
         boolean notify = true;
         String schedulerId = job.getSchedulerId();
         String jobName = job.getName();
@@ -352,27 +392,40 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             try {
                 if (!notification.getSchedulerId().matches(schedulerId)) {
                     notify = false;
+
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("%s[notify=%s][schedulerId not match][%s][%s]", method, notify, notification.getSchedulerId(),
+                                schedulerId));
+                    }
                 }
             } catch (Exception ex) {
-                throw new Exception(String.format("%s: check with configured scheduler_id = %s: %s", method, schedulerId, ex));
+                throw new Exception(String.format("%s[check with configured scheduler_id=%s]%s", method, schedulerId, ex));
             }
         }
         if (notify && !jobName.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME)) {
             try {
                 if (!notification.getJobName().matches(jobName)) {
                     notify = false;
+
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("%s[notify=%s][not match][%s][%s]", method, notify, notification.getJobName(), jobName));
+                    }
+                } else {
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("%s[notify=%s][match][%s][%s][%s][%s]", method, notify, notification.getSchedulerId(), schedulerId,
+                                notification.getJobName(), jobName));
+                    }
                 }
             } catch (Exception ex) {
-                throw new Exception(String.format("%s: check with configured scheduler_id = %s, name = %s: %s", method, schedulerId, jobName, ex));
+                throw new Exception(String.format("%s[check with configured scheduler_id=%s, name=%s]%s", method, schedulerId, jobName, ex));
             }
         }
-        LOGGER.debug(String.format("%s: %s(schedulerId = %s, jobName = %s) and configured(schedulerId = %s, jobName = %s)", method, notify ? "ok. do check db "
-                : "skip. ", notification.getSchedulerId(), notification.getJobName(), schedulerId, jobName));
         return notify;
     }
 
-    private JobChainNotification getJobChainNotification(DBItemSchedulerMonNotifications notification, ElementNotificationJobChain jc) throws Exception {
-        String method = "getJobChainNotification";
+    private JobChainNotification getJobChainNotification(int currentCounter, DBItemSchedulerMonNotifications notification,
+            ElementNotificationJobChain jc) throws Exception {
+        String method = "    [" + currentCounter + "][getJobChainNotification]";
 
         JobChainNotification jcn = new JobChainNotification();
         String stepFrom = jc.getStepFrom();
@@ -381,14 +434,20 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         DBItemSchedulerMonNotifications stepFromNotification = null;
         DBItemSchedulerMonNotifications stepToNotification = null;
         // stepFrom, stepTo handling
-        if (!stepFrom.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME) || !stepTo.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME)
-                || !jc.getExcludedSteps().isEmpty()) {
-
+        if (!stepFrom.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME) || !stepTo.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME)) {
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("%s analyze configured step_from, step_to", method));
+            }
             Long stepFromIndex = new Long(0);
             Long stepToIndex = new Long(0);
-            List<DBItemSchedulerMonNotifications> steps = this.getDbLayer().getOrderNotifications(largeResultFetchSize, notification.getOrderHistoryId());
+            List<DBItemSchedulerMonNotifications> steps = this.getDbLayer().getOrderNotifications(largeResultFetchSize, notification
+                    .getOrderHistoryId());
             if (steps == null || steps.isEmpty()) {
-                throw new Exception(String.format("%s: no steps found for orderHistoryId = %s", method, notification.getOrderHistoryId()));
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("%s[no steps found for orderHistoryId=%s]%s", method, notification.getOrderHistoryId(),
+                            NotificationModel.toString(notification)));
+                }
+                throw new Exception(String.format("%sno steps found for orderHistoryId=%s", method, notification.getOrderHistoryId()));
             }
             for (DBItemSchedulerMonNotifications step : steps) {
                 if (stepFrom != null && step.getOrderStepState().equalsIgnoreCase(stepFrom) && stepFromIndex.equals(new Long(0))) {
@@ -412,57 +471,66 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 
             if (stepFrom != null && !stepFrom.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME) && jcn.getStepFrom() == null) {
                 jcn.setSteps(null);
-
-                LOGGER.debug(String
-                        .format("%s: skip. configured stepFrom \"%s\" not founded. notification.getOrderHistoryId() = %s, jcn.getStepFromIndex() = %s, jcn.getStepToIndex() = %s, configured stepTo = %s",
-                                method, stepFrom, notification.getOrderHistoryId(), jcn.getStepFromIndex(), jcn.getStepToIndex(), stepTo));
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format(
+                            "%s can't set setLastStepForNotification. configured step_from \"%s\" not founded in the notification table.", method,
+                            stepFrom));
+                }
             } else {
                 for (DBItemSchedulerMonNotifications step : jcn.getSteps()) {
                     if (step.getStep() >= jcn.getStepFromIndex() && step.getStep() <= jcn.getStepToIndex()) {
                         jcn.setLastStepForNotification(step);
                     }
                 }
-
-                LOGGER.debug(String
-                        .format("%s: notification.getOrderHistoryId() = %s, jcn.getSteps().size() = %s, jcn.getStepFromIndex() = %s, jcn.getStepToIndex() = %s, configured stepFrom = %s, configured stepTo = %s",
-                                method, notification.getOrderHistoryId(), jcn.getSteps().size(), jcn.getStepFromIndex(), jcn.getStepToIndex(), stepFrom, stepTo));
             }
 
         } else {
-            LOGGER.debug(String.format("%s:  find last step for notification.getOrderHistoryId = %s. notification.id = %s", method,
-                    notification.getOrderHistoryId(), notification.getId()));
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("%s get last step from db", method));
+            }
+
             jcn.setLastStepForNotification(getDbLayer().getNotificationsOrderLastStep(largeResultFetchSize, notification, false));
             jcn.setStepFrom(notification);
-            jcn.setStepTo(jcn.getLastStepForNotification());
+            if (jcn.getLastStepForNotification() != null) {
+                jcn.setStepTo(jcn.getLastStepForNotification());
+                jcn.setStepToIndex(jcn.getStepTo().getStep());
+            }
         }
+
+        if (isDebugEnabled) {
+            LOGGER.debug(String.format("%s[stepFromIndex=%s][stepToIndex=%s]", method, jcn.getStepFromIndex(), jcn.getStepToIndex()));
+            LOGGER.debug(String.format("%s[stepFrom][%s]", method, NotificationModel.toString(jcn.getStepFrom())));
+            LOGGER.debug(String.format("%s[stepTo][%s]", method, NotificationModel.toString(jcn.getStepTo())));
+        }
+
         return jcn;
     }
 
-    private void executeNotifyJob(DBItemSchedulerMonSystemNotifications sm, String systemId, DBItemSchedulerMonNotifications notification,
-            ElementNotificationJob job) throws Exception {
-        String method = "executeNotifyJob";
+    private void executeNotifyJob(int currentCounter, DBItemSchedulerMonSystemNotifications sm, String systemId,
+            DBItemSchedulerMonNotifications notification, ElementNotificationJob job) throws Exception {
+        String method = "    [" + currentCounter + "][executeNotifyJob]";
         String serviceNameOnError = job.getMonitor().getServiceNameOnError();
         String serviceNameOnSuccess = job.getMonitor().getServiceNameOnSuccess();
 
         if (job.getNotifications() < 1) {
             counter.addSkip();
-            LOGGER.debug(String
-                    .format("%s: serviceNameOnError = %s, serviceNameOnSuccess = %s. skip notify Job (maxNotifications is %s): notification.id = %s, schedulerId = %s, job = %s",
-                            method, serviceNameOnError, serviceNameOnSuccess, job.getNotifications(), notification.getId(), notification.getSchedulerId(),
-                            notification.getJobName()));
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][skip][notifications < 1]%s", method, NotificationModel.toString(job)));
+            }
             return;
         }
         if (!StringUtils.isEmpty(serviceNameOnError)) {
-            executeNotifyJob(sm, systemId, notification, job, true);
+            executeNotifyJob(currentCounter, sm, systemId, notification, job, true);
         }
         if (!StringUtils.isEmpty(serviceNameOnSuccess)) {
-            executeNotifyJob(sm, systemId, notification, job, false);
+            executeNotifyJob(currentCounter, sm, systemId, notification, job, false);
         }
     }
 
-    private void executeNotifyJob(DBItemSchedulerMonSystemNotifications sm, String systemId, DBItemSchedulerMonNotifications notification,
-            ElementNotificationJob job, boolean notifyOnError) throws Exception {
-        String method = "executeNotifyJob";
+    private void executeNotifyJob(int currentCounter, DBItemSchedulerMonSystemNotifications sm, String systemId,
+            DBItemSchedulerMonNotifications notification, ElementNotificationJob job, boolean notifyOnError) throws Exception {
+        String method = "    [" + currentCounter + "][executeNotifyJob]";
 
         String notifyMsg = null;
         String serviceName = null;
@@ -478,7 +546,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             notifyMsg = "notifyOnSuccess";
             serviceName = job.getMonitor().getServiceNameOnSuccess();
             serviceStatus = EServiceStatus.OK;
-            serviceMessagePrefix = EServiceMessagePrefix.NONE;
+            serviceMessagePrefix = EServiceMessagePrefix.SUCCESS;
         }
 
         String returnCodeFrom = job.getReturnCodeFrom();
@@ -492,66 +560,89 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 
         if (notification.getOrderStepEndTime() == null) {
             counter.addSkip();
-            LOGGER.debug(String.format(
-                    "%s:[%s][%s]. skip notify Job (step is not completed - step end time is empty): notification.id = %s, notification.jobName = %s", method,
-                    notifyMsg, serviceName, notification.getId(), notification.getJobName()));
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][%s][%s][skip][step is not completed - step end time is empty]%s", method, notifyMsg, serviceName,
+                        NotificationModel.toString(notification)));
+            }
             return;
         }
 
         if (hasReturnCodes) {
-            if (!checkDoNotificationByReturnCodes(notification, serviceName, notifyMsg,job.getName(),returnCodeFrom, returnCodeTo)) {
+            if (!checkDoNotifyByReturnCodes(notification, serviceName, notifyMsg, job.getName(), returnCodeFrom, returnCodeTo)) {
                 counter.addSkip();
+
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("[%s][%s][%s][skip][notifyOnError=%s][checkDoNotificationByReturnCodes=false]%s", method, notifyMsg,
+                            serviceName, notifyOnError, NotificationModel.toString(notification)));
+                }
+
                 return;
             }
         } else {
             if (notifyOnError && !notification.getError()) {
                 counter.addSkip();
-                LOGGER.debug(String.format("%s:[%s][%s]. skip notify Job (job has no error): notification.id = %s, notification.jobName = %s", method,
-                        notifyMsg, serviceName, notification.getId(), notification.getJobName()));
+
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("[%s][%s][%s][skip][notifyOnError=%s][job has no error]%s", method, notifyMsg, serviceName,
+                            notifyOnError, NotificationModel.toString(notification)));
+                }
                 return;
             } else if (!notifyOnError && notification.getError()) {
                 counter.addSkip();
-                LOGGER.debug(String.format(
-                        "%s:[%s][%s]. skip notify Job (job has error): notification.id = %s, notification.jobName = %s, notification.errorText = %s", method,
-                        notifyMsg, serviceName, notification.getId(), notification.getJobName(), notification.getErrorText()));
+
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("[%s][%s][%s][skip][notifyOnError=%s][job has an error]%s", method, notifyMsg, serviceName,
+                            notifyOnError, NotificationModel.toString(notification)));
+                }
                 return;
             }
         }
 
         boolean isNew = false;
         if (sm == null) {
-            sm = this.getDbLayer().getSystemNotification(systemId, serviceName, notification.getId(), checkId,
-                    DBLayer.NOTIFICATION_OBJECT_TYPE_JOB, !notifyOnError, stepFrom, stepTo, returnCodeFrom, returnCodeTo);
+            sm = this.getDbLayer().getSystemNotification(systemId, serviceName, notification.getId(), checkId, DBLayer.NOTIFICATION_OBJECT_TYPE_JOB,
+                    !notifyOnError, stepFrom, stepTo, returnCodeFrom, returnCodeTo);
         }
         if (sm == null) {
             isNew = true;
             sm = this.getDbLayer().createSystemNotification(systemId, serviceName, notification.getId(), checkId, returnCodeFrom, returnCodeTo,
-                    DBLayer.NOTIFICATION_OBJECT_TYPE_JOB, stepFrom, stepTo, notification.getTaskStartTime(),
-                    notification.getTaskEndTime(), new Long(0), notifications, false, false, !notifyOnError);
+                    DBLayer.NOTIFICATION_OBJECT_TYPE_JOB, stepFrom, stepTo, notification.getTaskStartTime(), notification.getTaskEndTime(), new Long(
+                            0), notifications, false, false, !notifyOnError);
 
         }
-        LOGGER.debug(String.format("%s:[%s][%s]. %s. %s", method, notifyMsg, serviceName, isNew ? "new system notification" : "old system notification",
-                sm.toString()));
+
+        if (isDebugEnabled) {
+            LOGGER.debug(String.format("[%s][%s][%s][isNew=%s]%s", method, notifyMsg, serviceName, isNew, NotificationModel.toString(sm)));
+        }
 
         if (sm.getMaxNotifications()) {
             counter.addSkip();
-            LOGGER.debug(String.format(
-                    "%s:[%s][%s]. skip notify Job (count notifications was reached): sm.id = %s, sm.currentNotification = %s, sm.maxNotifictions = %s", method,
-                    notifyMsg, serviceName, sm.getId(), sm.getCurrentNotification(), sm.getMaxNotifications()));
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][%s][%s][skip]maxNotifications=true", method, notifyMsg, serviceName));
+            }
             return;
         }
         if (sm.getAcknowledged()) {
             counter.addSkip();
-            LOGGER.debug(String.format("%s:[%s][%s]. skip notify Job (is acknowledged): sm.id = %s, sm.currentNotification = %s, sm.acknowledged = %s", method,
-                    notifyMsg, serviceName, sm.getId(), sm.getCurrentNotification(), sm.getAcknowledged()));
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][%s][%s][skip]acknowledged=true", method, notifyMsg, serviceName));
+            }
+
             return;
         }
         if (sm.getCurrentNotification() >= notifications) {
-            this.setMaxNotifications(isNew, sm);
+            if (!isNew) {
+                closeSystemNotification(sm, notification.getOrderEndTime());
+            }
             counter.addSkip();
-            LOGGER.debug(String.format(
-                    "%s:[%s][%s]. skip notify Job (count notifications was reached): sm.id = %s, sm.currentNotification = %s, configured notifications = %s",
-                    method, notifyMsg, serviceName, sm.getId(), sm.getCurrentNotification(), notifications));
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][%s][%s][skip][%s]count notifications was reached", method, notifyMsg, serviceName, notifications));
+            }
+
             return;
         }
 
@@ -564,20 +655,17 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             }
             sm.setNotifications(notifications);
             sm.setModified(DBLayer.getCurrentDateTime());
-            if (isNew) {
-                LOGGER.debug(String.format(CREATE_NOTIFICATION_LOGGING, method, sm.getSystemId(), sm.getServiceName(), sm.getCurrentNotification(),
-                        sm.getNotificationId(), sm.getCheckId(), sm.getStepFrom(), sm.getStepTo()));
-            } else {
-                LOGGER.debug(String.format(UPDATE_NOTIFICATION_LOGGING, method, sm.getId(), sm.getSystemId(), sm.getServiceName(), sm.getCurrentNotification(),
-                        sm.getNotificationId(), sm.getCheckId(), sm.getStepFrom(), sm.getStepTo()));
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][%s][%s][isNew=%s]%s", method, notifyMsg, serviceName, isNew, NotificationModel.toString(sm)));
+                LOGGER.debug(String.format("[%s][%s][%s][isNew=%s]%s", method, notifyMsg, serviceName, isNew, NotificationModel.toString(
+                        notification)));
             }
-            LOGGER.debug(String.format("%s:[%s][%s]. notification.id = %s, notification.jobName = %s", method, notifyMsg, serviceName, notification.getId(),
-                    notification.getJobName()));
 
             ISystemNotifierPlugin pl = job.getMonitor().getPluginObject();
-            LOGGER.info(String.format(METHOD_LOGGING, method));
-            LOGGER.info(String.format(CALL_PLUGIN_LOGGING, method, notifyMsg, serviceName, notification.getJobName(), sm.getCurrentNotification(),
-                    sm.getNotifications(), pl.getClass().getSimpleName()));
+            LOGGER.info("----------------------------------------------------------------");
+            LOGGER.info(String.format(CALL_PLUGIN_LOGGING, method, notifyMsg, serviceName, notification.getJobName(), sm.getCurrentNotification(), sm
+                    .getNotifications(), pl.getClass().getSimpleName()));
             pl.init(job.getMonitor());
             pl.notifySystem(this.getSpooler(), this.options, this.getDbLayer(), notification, sm, null, serviceStatus, serviceMessagePrefix);
 
@@ -589,6 +677,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             }
             getDbLayer().getConnection().commit();
             counter.addSuccess();
+            LOGGER.info("----------------------------------------------------------------");
         } catch (Exception ex) {
             try {
                 getDbLayer().getConnection().rollback();
@@ -604,56 +693,39 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         return !(returnCodeFrom.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME) && returnCodeTo.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME));
     }
 
-    private void executeNotifyJobChain(DBItemSchedulerMonSystemNotifications sm, String systemId, DBItemSchedulerMonNotifications notification,
-            ElementNotificationJobChain jobChain) throws Exception {
-        String method = "executeNotifyJobChain";
-        String serviceNameOnError = jobChain.getMonitor().getServiceNameOnError();
-        String serviceNameOnSuccess = jobChain.getMonitor().getServiceNameOnSuccess();
+    private void executeNotifyJobChain(int currentCounter, DBItemSchedulerMonSystemNotifications sm, String systemId,
+            DBItemSchedulerMonNotifications notification, ElementNotificationJobChain jobChain) throws Exception {
+        String method = "    [" + currentCounter + "][executeNotifyJobChain]";
 
         if (jobChain.getNotifications() < 1) {
             counter.addSkip();
-            LOGGER.debug(String
-                    .format("%s: serviceNameOnError = \"%s\", serviceNameOnSuccess = \"%s\". skip notify JobChain (maxNotifications is %s): notification.id = %s, schedulerId = %s, job = %s",
-                            method, serviceNameOnError, serviceNameOnSuccess, jobChain.getNotifications(), notification.getId(), notification.getSchedulerId(),
-                            notification.getJobName()));
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("%s[skip][notifications < 1]%s", method, NotificationModel.toString(jobChain)));
+            }
             return;
         }
 
-        LOGGER.debug(String.format(
-                "%s: serviceNameOnError = \"%s\", serviceNameOnSuccess = \"%s\". notification.id = %s, schedulerId = %s, notification.jobChainName = %s",
-                method, serviceNameOnError, serviceNameOnSuccess, notification.getId(), notification.getSchedulerId(), notification.getJobChainName()));
-
-        JobChainNotification jcn = getJobChainNotification(notification, jobChain);
+        String serviceNameOnError = jobChain.getMonitor().getServiceNameOnError();
+        String serviceNameOnSuccess = jobChain.getMonitor().getServiceNameOnSuccess();
         if (!StringUtils.isEmpty(serviceNameOnError)) {
-            if (jcn.getLastStepForNotification() == null) {
-                counter.addSkip();
-            } else {
-                executeNotifyJobChain(sm, systemId, notification, jobChain, jcn, true);
-            }
+            executeNotifyJobChain(currentCounter, sm, systemId, notification, jobChain, true);
         }
-
         if (!StringUtils.isEmpty(serviceNameOnSuccess)) {
-            if (jcn.getLastStepForNotification() == null) {
-                counter.addSkip();
-            } else {
-                executeNotifyJobChain(sm, systemId, notification, jobChain, jcn, false);
-            }
+            executeNotifyJobChain(currentCounter, sm, systemId, notification, jobChain, false);
         }
     }
 
-    private void executeNotifyJobChain(DBItemSchedulerMonSystemNotifications sm, String systemId, DBItemSchedulerMonNotifications notification,
-            ElementNotificationJobChain jobChain, JobChainNotification jcn, boolean notifyOnError) throws Exception {
-        String method = "executeNotifyJobChain";
-
-        if (jcn.getLastStepForNotification() == null) {
-            throw new Exception(String.format(LAST_STEP_IS_NULL));
-        }
+    private void executeNotifyJobChain(int currentCounter, DBItemSchedulerMonSystemNotifications sm, String systemId,
+            DBItemSchedulerMonNotifications notification, ElementNotificationJobChain jobChain, boolean notifyOnError) throws Exception {
+        String method = "    [" + currentCounter + "][executeNotifyJobChain]";
 
         String notifyMsg = null;
         String serviceName = null;
         EServiceStatus serviceStatus = null;
         EServiceMessagePrefix serviceMessagePrefix = null;
         boolean recovered = false;
+        boolean maxNotifications = false;
 
         Long checkId = new Long(0);
         String stepFrom = jobChain.getStepFrom();
@@ -662,164 +734,300 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         String returnCodeTo = jobChain.getReturnCodeTo();
         boolean hasReturnCodes = hasReturnCodes(returnCodeFrom, returnCodeTo);
         Long notifications = jobChain.getNotifications();
+        boolean isNotifyAgain = sm != null;
+        boolean isNew = false;
 
         if (notifyOnError) {
             notifyMsg = "notifyOnError";
             serviceName = jobChain.getMonitor().getServiceNameOnError();
             serviceStatus = EServiceStatus.CRITICAL;
             serviceMessagePrefix = EServiceMessagePrefix.ERROR;
-
-            if (!hasReturnCodes && !jcn.getLastStepForNotification().getError() && !notification.getError()) {
-                counter.addSkip();
-                LOGGER.debug(String
-                        .format("%s: [%s][%s]. skip notify JobChain (step %s has no error): jcn.getLastStepForNotification().id = %s, jcn.getLastStepForNotification().jobChainName = %s",
-                                method, notifyMsg, serviceName, jcn.getLastStepForNotification().getOrderStepState(), jcn.getLastStepForNotification().getId(),
-                                jcn.getLastStepForNotification().getJobChainName()));
-                return;
-            }
-
-            if (notification.getRecovered()) {
-                serviceStatus = EServiceStatus.OK;
-                serviceMessagePrefix = EServiceMessagePrefix.RECOVERED;
-                recovered = true;
-            }
         } else {
             notifyMsg = "notifyOnSuccess";
             serviceName = jobChain.getMonitor().getServiceNameOnSuccess();
             serviceStatus = EServiceStatus.OK;
-            serviceMessagePrefix = EServiceMessagePrefix.NONE;
-
-            if (!hasReturnCodes && jcn.getLastStepForNotification().getError()) {
-                counter.addSkip();
-                LOGGER.debug(String
-                        .format("%s: [%s][%s]. skip notify JobChain (last step %s ends with error): jcn.getLastStepForNotification().id = %s, jcn.getLastStepForNotification().jobChainName = %s",
-                                method, notifyMsg, serviceName, jcn.getLastStepForNotification().getOrderStepState(), jcn.getLastStepForNotification().getId(),
-                                jcn.getLastStepForNotification().getJobChainName()));
-                return;
-            }
-
-            if (jcn.getLastStepForNotification().getOrderEndTime() == null) {
-                counter.addSkip();
-                LOGGER.debug(String.format("%s:[%s][%s]. skip notify JobChain (order is not yet to end): notification.id = %s, notification.jobChainName = %s",
-                        method, notifyMsg, serviceName, notification.getId(), notification.getJobChainName()));
-                return;
-            }
+            serviceMessagePrefix = EServiceMessagePrefix.SUCCESS;
         }
 
-        if (hasReturnCodes && !checkDoNotificationByReturnCodes(jcn.getLastStepForNotification(), serviceName, notifyMsg,jobChain.getName(),returnCodeFrom, returnCodeTo)) {
-            counter.addSkip();
-            return;
-        }
-
-        if (jobChain.getExcludedSteps().contains(jcn.getLastStepForNotification().getOrderStepState())) {
-            if (notifyOnError) {
-                if (jcn.getLastStepForNotification().getOrderEndTime() != null
-                        && jcn.getLastStepForNotification().getOrderStepState().equals(jcn.getLastStep().getOrderStepState())) {
-                    LOGGER.debug(String.format("%s: [%s][%s]. order is completed and error step state equals config step = %s and this is "
-                            + "the last order step.  create and do notify system: notification.id = %s", method, notifyMsg, serviceName, jcn
-                            .getLastStepForNotification().getOrderStepState(), notification.getId()));
-                } else {
-                    counter.addSkip();
-                    LOGGER.info(String.format("%s:[%s][%s]. skip notify JobChain (order is not completed or error step equals config step = %s and this is "
-                            + "not the last order step). notification.id = %s", method, notifyMsg, serviceName, jcn.getLastStepForNotification()
-                            .getOrderStepState(), notification.getId()));
-                    return;
+        if (isNotifyAgain) {
+            if (!handledByNotifyAgain.contains(sm.getId())) {
+                handledByNotifyAgain.add(sm.getId());
+            }
+            if (notifyOnError && sm.getSuccess()) {
+                counter.addSkip();
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("%s[%s][%s][skip][notifyAgain]is notifyOnError but system notification has succes=1", method,
+                            notifyMsg, serviceName));
                 }
-            } else {
+                return;
+            }
+
+            if (!notifyOnError && !sm.getSuccess()) {
                 counter.addSkip();
-                LOGGER.info(String.format("%s:[%s][%s]. skip notify JobChain (step = %s is configured as excluded). notification.id = %s"
-                        + "serviceName = %s. ", method, notifyMsg, serviceName, jcn.getLastStepForNotification().getOrderStepState(), notification.getId()));
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("%s[%s][%s][skip][notifyAgain]is notifyOnSuccess but system notification has succes=0", method,
+                            notifyMsg, serviceName));
+                }
+                return;
+            }
+
+        }
+
+        if (sm == null) {
+            try {
+                getDbLayer().getConnection().beginTransaction();
+
+                sm = getDbLayer().getSystemNotification(systemId, serviceName, notification.getId(), checkId,
+                        DBLayer.NOTIFICATION_OBJECT_TYPE_JOB_CHAIN, !notifyOnError, stepFrom, stepTo, returnCodeFrom, returnCodeTo);
+
+                if (sm == null) {
+                    isNew = true;
+                    sm = getDbLayer().createSystemNotification(systemId, serviceName, notification.getId(), checkId, returnCodeFrom, returnCodeTo,
+                            DBLayer.NOTIFICATION_OBJECT_TYPE_JOB_CHAIN, stepFrom, stepTo, notification.getOrderStartTime(), notification
+                                    .getOrderEndTime(), new Long(0), notifications, false, false, !notifyOnError);
+                    getDbLayer().getConnection().save(sm);
+                }
+                getDbLayer().getConnection().commit();
+            } catch (Exception ex) {
+                try {
+                    getDbLayer().getConnection().rollback();
+                } catch (Exception exx) {
+                }
+                LOGGER.error(String.format("%s %s", method, ex.toString()), ex);
                 return;
             }
         }
 
-        boolean isNew = false;
-        if (sm == null) {
-            sm = this.getDbLayer().getSystemNotification(systemId, serviceName, notification.getId(), checkId,
-                    DBLayer.NOTIFICATION_OBJECT_TYPE_JOB_CHAIN, !notifyOnError, stepFrom, stepTo, returnCodeFrom, returnCodeTo);
+        if (isDebugEnabled) {
+            LOGGER.debug(String.format("%s[%s][%s][isNew=%s]%s", method, notifyMsg, serviceName, isNew, NotificationModel.toString(sm)));
         }
 
-        if (sm == null) {
-            isNew = true;
-            sm = this.getDbLayer().createSystemNotification(systemId, serviceName, notification.getId(), checkId, returnCodeFrom, returnCodeTo,
-                    DBLayer.NOTIFICATION_OBJECT_TYPE_JOB_CHAIN, stepFrom, stepTo, notification.getOrderStartTime(),
-                    notification.getOrderEndTime(), new Long(0), notifications, false, false, !notifyOnError);
-        }
-
-        if (sm.getAcknowledged()) {
-            counter.addSkip();
-            LOGGER.debug(String.format("%s: [%s][%s]. skip notify JobChain (is acknowledged): sm.id = %s, sm.currentNotification = %s, sm.acknowledged = %s",
-                    method, notifyMsg, serviceName, sm.getId(), sm.getCurrentNotification(), sm.getAcknowledged()));
-            return;
+        if (!isNotifyAgain) {
+            if (handledByNotifyAgain.contains(sm.getId())) {
+                counter.addSkip();
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("%s[%s][%s][skip]already handled by notifyAgain", method, notifyMsg, serviceName));
+                }
+                return;
+            }
         }
 
         if (sm.getMaxNotifications()) {
             counter.addSkip();
-            LOGGER.debug(String.format(
-                    "%s:[%s][%s]. skip notify JobChain (count notifications was reached): sm.id = %s, sm.currentNotification = %s, sm.maxNotifications = %s",
-                    method, notifyMsg, serviceName, sm.getId(), sm.getCurrentNotification(), sm.getMaxNotifications()));
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("%s[%s][%s][skip]maxNotifications=true", method, notifyMsg, serviceName));
+            }
+            return;
+        }
+        if (sm.getAcknowledged()) {
+            counter.addSkip();
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("%s[%s][%s][skip]acknowledged=true", method, notifyMsg, serviceName));
+            }
             return;
         }
 
-        boolean maxNotifications = false;
+        JobChainNotification jcn = getJobChainNotification(currentCounter, notification, jobChain);
+        if (jcn.getLastStepForNotification() == null) {
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("%s[%s][%s][skip][isNew=%s]getLastStepForNotification=null", method, notifyMsg, serviceName, isNew));
+            }
+            return;
+        }
+        if (isDebugEnabled) {
+            LOGGER.debug(String.format("%s[%s][%s][isNew=%s][getLastStepForNotification]%s", method, notifyMsg, serviceName, isNew, NotificationModel
+                    .toString(jcn.getLastStepForNotification())));
+        }
+
+        DBItemSchedulerMonNotifications notification2send = null;
+        DBItemSchedulerMonSystemResults lastErrorSended = null;
         if (notifyOnError) {
-            if (isNew && notification.getRecovered()) {
-                counter.addSkip();
-                LOGGER.debug(String
-                        .format("%s: [%s][%s]. skip notify JobChains (notifications already recovered): notification.id = %s, notification.jobChainName = %s, notification.orderId = %s",
-                                method, notifyMsg, serviceName, notification.getId(), notification.getJobChainName(), notification.getOrderId()));
-                return;
+            lastErrorSended = getDbLayer().getSystemResultLastStep(largeResultFetchSize, sm.getId());
+
+            if (jcn.getLastStepForNotification().getError()) {
+                if (lastErrorSended != null) {
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("%s[%s][%s][onError][lastErrorSended]%s", method, notifyMsg, serviceName, NotificationModel
+                                .toString(lastErrorSended)));
+                    }
+
+                    if (lastErrorSended.getOrderStepState().equals(jcn.getLastStepForNotification().getOrderStepState())) {
+                        if (lastErrorSended.getCurrentNotification() >= notifications) {
+                            counter.addSkip();
+
+                            if (isDebugEnabled) {
+                                LOGGER.debug(String.format("%s[%s][%s][onError][skip][%s][count notifications for this state was reached]%s of %s",
+                                        method, notifyMsg, serviceName, lastErrorSended.getOrderStepState(), lastErrorSended.getCurrentNotification(),
+                                        notifications));
+                            }
+
+                            if (notification.getOrderEndTime() != null) {
+                                closeSystemNotification(sm, notification.getOrderEndTime());
+                                if (isDebugEnabled) {
+                                    LOGGER.debug(String.format(
+                                            "%s[%s][%s][onError][close]count notifications was reached and orderEndTime is not null", method,
+                                            notifyMsg, serviceName));
+                                }
+                            }
+                            return;
+                        }
+                    } else {
+                        if (isDebugEnabled) {
+                            LOGGER.debug(String.format("%s[%s][%s][onError][state changed]skip old lastErrorSended %s an create new %s", method,
+                                    notifyMsg, serviceName, lastErrorSended.getOrderStepState(), jcn.getLastStepForNotification()
+                                            .getOrderStepState()));
+                        }
+                        lastErrorSended = null;
+                    }
+                }
+                notification2send = jcn.getLastStepForNotification();
+            } else {
+                // check for recovery
+                if (lastErrorSended != null) {
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("%s[%s][%s][onNoError][lastErrorSended]%s", method, notifyMsg, serviceName, NotificationModel
+                                .toString(lastErrorSended)));
+                    }
+                    if (lastErrorSended.getRecovered()) {
+                        if (isDebugEnabled) {
+                            LOGGER.debug(String.format("%s[%s][%s][onNoError][skip][recovery]recovery already sended", method, notifyMsg,
+                                    serviceName));
+                        }
+                    } else {
+                        if (jcn.getLastStepForNotification().getId() > lastErrorSended.getNotificationId()) {
+
+                            boolean setRecovery = true;
+                            if (lastErrorSended.getOrderStepState().equals(jcn.getLastStepForNotification().getOrderStepState())) {
+                                if (jcn.getLastStepForNotification().getOrderStepEndTime() == null) {
+                                    if (isDebugEnabled) {
+                                        LOGGER.debug(String.format("%s[%s][%s][onNoError][skip][recovery][%s]state rerun is not completed", method,
+                                                notifyMsg, serviceName, lastErrorSended.getOrderStepState()));
+                                    }
+                                    setRecovery = false;
+                                }
+                            }
+                            if (setRecovery) {
+                                // send recovery
+                                notification2send = getDbLayer().getNotification(lastErrorSended.getNotificationId());
+                                lastErrorSended.setRecovered(true);
+                                recovered = true;
+                                if (isDebugEnabled) {
+                                    LOGGER.debug(String.format("%s[%s][%s][onNoError][found][recovery]%s", method, notifyMsg, serviceName,
+                                            NotificationModel.toString(notification2send)));
+                                }
+                            }
+
+                        } else {
+                            if (isDebugEnabled) {
+                                LOGGER.debug(String.format("%s[%s][%s][onNoError][skip][recovery]lastStep %s <= lastErrorSended %s", method,
+                                        notifyMsg, serviceName, jcn.getLastStepForNotification().getId(), lastErrorSended.getNotificationId()));
+                            }
+                        }
+                    }
+                } else {
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("%s[%s][%s][onNoError][skip][recovery]lastErrorSended not found", method, notifyMsg, serviceName));
+                    }
+                }
             }
 
-            if (sm.getRecovered()) {
-                this.setMaxNotifications(isNew, sm);
+            if (notification2send == null) {
                 counter.addSkip();
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("%s[%s][%s][skip]notification2send is null", method, notifyMsg, serviceName));
+                }
 
-                LOGGER.debug(String.format(
-                        "%s: [%s][%s]. skip notify JobChains (notifications already recovered): sm.id = %s, sm.currentNotification = %s, sm.recovered = %s",
-                        method, notifyMsg, serviceName, sm.getId(), sm.getCurrentNotification(), sm.getRecovered()));
+                if (isNotifyAgain) {
+                    if (notification.getOrderEndTime() != null) {
+                        closeSystemNotification(sm, notification.getOrderEndTime());
+                        if (isDebugEnabled) {
+                            LOGGER.debug(String.format("%s[%s][%s][close][notification2send is null]orderEndTime is not null", method, notifyMsg,
+                                    serviceName));
+                        }
+                    }
+                }
                 return;
             }
 
             if (recovered) {
-                maxNotifications = true;
+                serviceStatus = EServiceStatus.OK;
+                serviceMessagePrefix = EServiceMessagePrefix.RECOVERED;
             } else {
-                if (notification.getOrderEndTime() == null) {
-                    if (sm.getCurrentNotification() >= notifications) {
-                        counter.addSkip();
-                        LOGGER.debug(String
-                                .format("%s: [%s][%s]. skip notify JobChains (count notifications was reached): sm.id = %s, sm.currentNotification = %s, configured notifications = %s",
-                                        method, notifyMsg, serviceName, sm.getId(), sm.getCurrentNotification(), notifications));
-                        return;
-                    }
-                } else {
-                    if (sm.getCurrentNotification() >= notifications) {
-                        this.setMaxNotifications(isNew, sm);
+                if (jobChain.getExcludedSteps().contains(notification2send.getOrderStepState())) {
+                    counter.addSkip();
+                    LOGGER.info(String.format("%s[%s][%s][skip][%s][step is excluded]%s", method, notifyMsg, serviceName, notification2send
+                            .getOrderStepState(), NotificationModel.toString(notification2send)));
 
-                        counter.addSkip();
-                        LOGGER.debug(String
-                                .format("%s: [%s][%s]. skip notify JobChains (count notifications was reached): sm.id = %s, sm.currentNotification = %s, configured notifications = %s",
-                                        method, notifyMsg, serviceName, sm.getId(), sm.getCurrentNotification(), notifications));
-                        return;
+                    // close
+                    return;
+                }
+
+                if (hasReturnCodes && !checkDoNotifyByReturnCodes(notification2send, serviceName, notifyMsg, jobChain.getName(), returnCodeFrom,
+                        returnCodeTo)) {
+                    counter.addSkip();
+
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("%s[%s][%s][skip][checkDoNotificationByReturnCodes=false][%s]", method, notifyMsg, serviceName,
+                                NotificationModel.toString(notification2send)));
                     }
 
-                    if (sm.getCurrentNotification() + 1 >= notifications) {
+                    // close
+                    return;
+                }
+            }
+
+            if (lastErrorSended == null) {
+                lastErrorSended = getDbLayer().getSystemResult(sm.getId(), notification2send.getId());
+                if (lastErrorSended == null) {
+                    lastErrorSended = getDbLayer().createSystemResult(sm, notification2send);
+                }
+            }
+            lastErrorSended.setCurrentNotification(lastErrorSended.getCurrentNotification() + 1);
+            sm.setCurrentNotification(sm.getCurrentNotification() + 1);
+
+            if (notification.getOrderEndTime() != null) {
+                if (lastErrorSended != null) {
+                    if (lastErrorSended.getCurrentNotification() >= notifications) {
                         maxNotifications = true;
                     }
                 }
             }
 
-        } else {
-            if (sm.getCurrentNotification() >= notifications) {
-                this.setMaxNotifications(isNew, sm);
+        }// notifyOnError
+        else {// success
+            lastErrorSended = null;
+            if (notification.getOrderEndTime() == null) {
                 counter.addSkip();
-                LOGGER.debug(String
-                        .format("%s: [%s][%s]. skip notify JobChains (count notifications was reached): sm.id = %s, sm.currentNotification = %s, configured notifications = %s",
-                                method, notifyMsg, serviceName, sm.getId(), sm.getCurrentNotification(), notifications));
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("%s[%s][%s][skip]notification orderEndTime is null", method, notifyMsg, serviceName));
+                }
+                return;
+            } else {
+                if (jcn.getLastStepForNotification().getError()) {
+                    counter.addSkip();
+                    closeSystemNotification(sm, notification.getOrderEndTime());
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("%s[%s][%s][skip][close][lastStepForNotification ends with error]orderEndTime is not null", method,
+                                notifyMsg, serviceName));
+                    }
+                    return;
+                }
+            }
+            notification2send = jcn.getLastStepForNotification();
+
+            if (hasReturnCodes && !checkDoNotifyByReturnCodes(notification2send, serviceName, notifyMsg, jobChain.getName(), returnCodeFrom,
+                    returnCodeTo)) {
+                counter.addSkip();
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("%s[%s][%s][skip][checkDoNotificationByReturnCodes=false][%s]", method, notifyMsg, serviceName,
+                            NotificationModel.toString(notification2send)));
+                }
+                // close
                 return;
             }
 
-            if (sm.getCurrentNotification() + 1 >= notifications) {
+            sm.setCurrentNotification(sm.getCurrentNotification() + 1);
+            if (sm.getCurrentNotification() >= notifications) {
                 maxNotifications = true;
             }
         }
@@ -831,47 +1039,54 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             if (jcn.getStepTo() != null) {
                 sm.setStepToEndTime(jcn.getStepTo().getOrderStepEndTime());
             }
-            sm.setCurrentNotification(sm.getCurrentNotification() + 1);
+            // sm.setCurrentNotification(sm.getCurrentNotification() + 1);
             sm.setMaxNotifications(maxNotifications);
             sm.setNotifications(notifications);
             sm.setModified(DBLayer.getCurrentDateTime());
             sm.setSuccess(!notifyOnError);
             sm.setRecovered(recovered);
 
-            if (isNew) {
-                LOGGER.debug(String.format(CREATE_NOTIFICATION_LOGGING, method, sm.getSystemId(), sm.getServiceName(), sm.getCurrentNotification(),
-                        sm.getNotificationId(), sm.getCheckId(), sm.getStepFrom(), sm.getStepTo()));
-            } else {
-                LOGGER.debug(String.format(UPDATE_NOTIFICATION_LOGGING, method, sm.getId(), sm.getSystemId(), sm.getServiceName(), sm.getCurrentNotification(),
-                        sm.getNotificationId(), sm.getCheckId(), sm.getStepFrom(), sm.getStepTo()));
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("%s[%s][%s][isNew=%s][send]%s", method, notifyMsg, serviceName, isNew, NotificationModel.toString(sm)));
+                LOGGER.debug(String.format("%s[%s][%s][isNew=%s][send]%s", method, notifyMsg, serviceName, isNew, NotificationModel.toString(
+                        notification2send)));
+                if (lastErrorSended != null) {
+                    LOGGER.debug(String.format("%s[%s][%s][isNew=%s][send]%s", method, notifyMsg, serviceName, isNew, NotificationModel.toString(
+                            lastErrorSended)));
+                }
             }
-            LOGGER.debug(String.format("%s:[%s][%s]. lastStepForNotification: id = %s, orderHistoryId = %s, step = %s, orderStepState = %s", method, notifyMsg,
-                    serviceName, jcn.getLastStepForNotification().getId(), jcn.getLastStepForNotification().getOrderHistoryId(), jcn
-                            .getLastStepForNotification().getStep(), jcn.getLastStepForNotification().getOrderStepState()));
 
             ISystemNotifierPlugin pl = jobChain.getMonitor().getPluginObject();
-            LOGGER.info(String.format(METHOD_LOGGING, method));
-            String jobChainInfo = jcn.getLastStepForNotification().getJobChainName() + "-" + jcn.getLastStepForNotification().getOrderId();
-            LOGGER.info(String.format(CALL_PLUGIN_LOGGING, method, notifyMsg, serviceName, jobChainInfo, sm.getCurrentNotification(), sm.getNotifications(), pl
-                    .getClass().getSimpleName()));
+
+            String jobChainInfo = notification2send.getJobChainName() + "-" + notification2send.getOrderId();
+
+            LOGGER.info("----------------------------------------------------------------");
+            LOGGER.info(String.format("[executeNotifyJobChain][%s][%s][%s]notification %s of %s. call plugin %s", notifyMsg, serviceName,
+                    jobChainInfo, sm.getCurrentNotification(), sm.getNotifications(), pl.getClass().getSimpleName()));
             pl.init(jobChain.getMonitor());
-            pl.notifySystem(this.getSpooler(), this.options, this.getDbLayer(), jcn.getLastStepForNotification(), sm, null, serviceStatus, serviceMessagePrefix);
+            pl.notifySystem(this.getSpooler(), this.options, getDbLayer(), notification2send, sm, null, serviceStatus, serviceMessagePrefix);
 
             getDbLayer().getConnection().beginTransaction();
-            if (isNew) {
-                getDbLayer().getConnection().save(sm);
-            } else {
-                getDbLayer().getConnection().update(sm);
+
+            getDbLayer().getConnection().update(sm);
+            if (lastErrorSended != null) {
+                if (lastErrorSended.getId() == null) {
+                    getDbLayer().getConnection().save(lastErrorSended);
+                } else {
+                    getDbLayer().getConnection().update(lastErrorSended);
+                }
             }
+
             getDbLayer().getConnection().commit();
             counter.addSuccess();
+            LOGGER.info("----------------------------------------------------------------");
         } catch (Exception ex) {
             try {
                 getDbLayer().getConnection().rollback();
             } catch (Exception e) {
                 // no exception handling
             }
-            LOGGER.warn(String.format(THREE_PARAMS_LOGGING, method, notifyMsg, serviceName, ex.getMessage()));
+            LOGGER.warn(String.format(THREE_PARAMS_LOGGING, method, notifyMsg, serviceName, ex.getMessage()), ex);
             counter.addError();
         }
     }
@@ -884,10 +1099,15 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 
             getDbLayer().getConnection().beginTransaction();
             getDbLayer().deleteDummySystemNotification(systemId);
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][objectType=%s][systemId=%s]", method, sm.getObjectType(), sm.getSystemId()));
+            }
+
             getDbLayer().getConnection().save(sm);
             getDbLayer().getConnection().commit();
         } catch (Exception ex) {
-            LOGGER.warn(String.format("%s:%s", method, ex.toString()));
+            LOGGER.warn(String.format("[%s]%s", method, ex.toString()));
             try {
                 getDbLayer().getConnection().rollback();
             } catch (Exception e) {
@@ -900,34 +1120,40 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         if (!monitorOnSuccessTimers.isEmpty() || !monitorOnErrorTimers.isEmpty()) {
             notifyTimer(systemId, monitorOnSuccessTimers, monitorOnErrorTimers);
         } else {
-            LOGGER.info(String.format("%s: skip notify timer. found 0 Timer definitions", method));
+            LOGGER.info(String.format("[%s][skip]found 0 Timer definitions", method));
         }
     }
 
-    private void notifyTimer(String systemId, ArrayList<ElementNotificationTimerRef> timersOnSuccess, ArrayList<ElementNotificationTimerRef> timersOnError)
-            throws Exception {
+    private void notifyTimer(String systemId, ArrayList<ElementNotificationTimerRef> timersOnSuccess,
+            ArrayList<ElementNotificationTimerRef> timersOnError) throws Exception {
         String method = "notifyTimer";
         List<DBItemSchedulerMonChecks> result = getDbLayer().getChecksForNotifyTimer(largeResultFetchSize);
         LOGGER.info(String.format(
-                "%s: found %s \"service_name_on_success\" and %s \"service_name_on_error\" timer definitions and %s checks for timers in the db", method,
-                timersOnSuccess.size(), timersOnError.size(), result.size()));
+                "[%s]found %s \"service_name_on_success\" and %s \"service_name_on_error\" timer definitions and %s checks for timers in the db",
+                method, timersOnSuccess.size(), timersOnError.size(), result.size()));
         initSendCounters();
+        int currentCounter = 0;
         for (DBItemSchedulerMonChecks check : result) {
-            LOGGER.debug(String.format("%s: notify timer \"service_name_on_success\"", method));
+            currentCounter++;
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][%s]check timers for \"service_name_on_success\"", method, currentCounter));
+            }
             for (int i = 0; i < timersOnSuccess.size(); i++) {
                 counter.addTotal();
                 ElementNotificationTimerRef t = timersOnSuccess.get(i);
-                if (checkDoNotificationTimer(check, t)) {
+                if (checkDoNotifyTimer(currentCounter, check, t)) {
                     executeNotifyTimer(systemId, check, t, false);
                 } else {
                     counter.addSkip();
                 }
             }
-            LOGGER.debug(String.format("%s: notify timer \"service_name_on_error\"", method));
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][%s]check timers for \"service_name_on_error\"", method, currentCounter));
+            }
             for (int i = 0; i < timersOnError.size(); i++) {
                 counter.addTotal();
                 ElementNotificationTimerRef t = timersOnError.get(i);
-                if (checkDoNotificationTimer(check, t)) {
+                if (checkDoNotifyTimer(currentCounter, check, t)) {
                     executeNotifyTimer(systemId, check, t, true);
                 } else {
                     counter.addSkip();
@@ -940,6 +1166,8 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
     private void notifyAgain(String systemId) throws Exception {
         String method = "notifyAgain";
 
+        handledByNotifyAgain = new ArrayList<Long>();
+
         Long objectType = null;
         if (monitorJobChains.size() == 0 && monitorJobs.size() > 0) {
             objectType = DBLayer.NOTIFICATION_OBJECT_TYPE_JOB;
@@ -948,80 +1176,113 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         }
 
         List<DBItemSchedulerMonSystemNotifications> result = getDbLayer().getSystemNotifications4NotifyAgain(systemId, objectType);
-        LOGGER.info(String.format("%s: [%s] found %s system notifications in the db for notify again", method, systemId, result.size()));
+        LOGGER.info(String.format("[%s]found=%s", method, result.size()));
+
         initSendCounters();
+        int c = 0;
         for (DBItemSchedulerMonSystemNotifications systemNotification : result) {
+            c++;
             counter.addTotal();
+
+            String notifyMsg = systemNotification.getSuccess() ? "notifyOnSuccess" : "notifyOnError";
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][%s][%s]%s", c, method, notifyMsg, NotificationModel.toString(systemNotification)));
+            }
+
             DBItemSchedulerMonNotifications notification = getDbLayer().getNotification(systemNotification.getNotificationId());
             if (notification == null) {
+                counter.addSkip();
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("[%s][%s][%s][skip]not foud notification", c, method, notifyMsg));
+                }
+                continue;
+            }
+            if (!systemNotification.getCheckId().equals(new Long(0))) {
+                // timer
+                if (isDebugEnabled) {
+                    LOGGER.debug(String.format("[%s][%s][%s][skip]is timer system notifier", c, method, notifyMsg));
+                }
                 counter.addSkip();
                 continue;
             }
 
-            if (!systemNotification.getCheckId().equals(new Long(0))) {
-                // timer
-                counter.addSkip();
-                continue;
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][%s][%s]%s", c, method, notifyMsg, NotificationModel.toString(notification)));
             }
 
             if (systemNotification.getObjectType().equals(DBLayer.NOTIFICATION_OBJECT_TYPE_JOB_CHAIN)) {
 
                 Long currentNotificationBefore = systemNotification.getCurrentNotification();
                 for (int i = 0; i < monitorJobChains.size(); i++) {
-                    counter.addTotal();
+                    // counter.addTotal();
                     ElementNotificationJobChain jc = monitorJobChains.get(i);
-                    if (checkDoNotification(notification, jc)) {
-                        String serviceNameOnError = StringUtils.isEmpty(jc.getMonitor().getServiceNameOnError()) ? "" : jc.getMonitor().getServiceNameOnError();
+                    if (checkDoNotify(c, notification, jc)) {
+                        String serviceNameOnError = StringUtils.isEmpty(jc.getMonitor().getServiceNameOnError()) ? "" : jc.getMonitor()
+                                .getServiceNameOnError();
                         String serviceNameOnSuccess = StringUtils.isEmpty(jc.getMonitor().getServiceNameOnSuccess()) ? "" : jc.getMonitor()
                                 .getServiceNameOnSuccess();
-                        if (systemNotification.getServiceName().equalsIgnoreCase(serviceNameOnError)
-                                || systemNotification.getServiceName().equalsIgnoreCase(serviceNameOnSuccess)) {
-                            executeNotifyJobChain(systemNotification, systemId, notification, jc);
+                        if (systemNotification.getServiceName().equalsIgnoreCase(serviceNameOnError) || systemNotification.getServiceName()
+                                .equalsIgnoreCase(serviceNameOnSuccess)) {
+                            executeNotifyJobChain(c, systemNotification, systemId, notification, jc);
                         } else {
-                            counter.addSkip();
+
+                            if (isDebugEnabled) {
+                                LOGGER.debug(String.format("[%s][%s][%s][skip]service names not match", c, method, notifyMsg));
+                            }
+
+                            // counter.addSkip();
                         }
                     } else {
-                        counter.addSkip();
+                        // counter.addSkip();
                     }
                 }
                 Long currentNotificationAfter = systemNotification.getCurrentNotification();
                 if (currentNotificationAfter.equals(currentNotificationBefore) && systemNotification.getStepToEndTime() != null) {
-                    // LOGGER.debug(String.format("%s: [%s] disable notify again (system notification(id = %s) was not sent. maybe the JobChain configuration was changed)",method,systemId,systemNotification.getId()));
+                    // LOGGER.debug(String.format("%s: [%s] disable notify again (system notification(id = %s) was not sent. maybe the JobChain configuration
+                    // was changed)",method,systemId,systemNotification.getId()));
                     // setMaxNotifications(false,systemNotification);
                 }
 
             } else if (systemNotification.getObjectType().equals(DBLayer.NOTIFICATION_OBJECT_TYPE_JOB)) {
                 Long currentNotificationBefore = systemNotification.getCurrentNotification();
                 for (int i = 0; i < monitorJobs.size(); i++) {
-                    counter.addTotal();
+                    // counter.addTotal();
                     ElementNotificationJob job = monitorJobs.get(i);
-                    if (checkDoNotification(notification, job)) {
+                    if (checkDoNotify(c, notification, job)) {
                         String serviceNameOnError = StringUtils.isEmpty(job.getMonitor().getServiceNameOnError()) ? "" : job.getMonitor()
                                 .getServiceNameOnError();
                         String serviceNameOnSuccess = StringUtils.isEmpty(job.getMonitor().getServiceNameOnSuccess()) ? "" : job.getMonitor()
                                 .getServiceNameOnSuccess();
 
-                        if ((systemNotification.getServiceName().equalsIgnoreCase(serviceNameOnError) || systemNotification.getServiceName().equalsIgnoreCase(
-                                serviceNameOnSuccess))) {
-                            executeNotifyJob(systemNotification, systemId, notification, job);
+                        if ((systemNotification.getServiceName().equalsIgnoreCase(serviceNameOnError) || systemNotification.getServiceName()
+                                .equalsIgnoreCase(serviceNameOnSuccess))) {
+                            executeNotifyJob(c, systemNotification, systemId, notification, job);
                         } else {
-                            counter.addSkip();
+                            if (isDebugEnabled) {
+                                LOGGER.debug(String.format("[%s][%s][skip]service names not match", method, c));
+                            }
+                            // counter.addSkip();
                         }
                     } else {
-                        counter.addSkip();
+                        if (isDebugEnabled) {
+                            LOGGER.debug(String.format("[%s][%s][skip]checkDoNotification=false", method, c));
+                        }
+                        // counter.addSkip();
                     }
                 }
                 Long currentNotificationAfter = systemNotification.getCurrentNotification();
                 if (currentNotificationAfter.equals(currentNotificationBefore)) {
-                    // LOGGER.debug(String.format("%s: [%s] disable notify again (system notification(id = %s) was not sent. maybe the Job configuration was changed)",method,systemId,systemNotification.getId()));
+                    // LOGGER.debug(String.format("%s: [%s] disable notify again (system notification(id = %s) was not sent. maybe the Job configuration was
+                    // changed)",method,systemId,systemNotification.getId()));
                     // setMaxNotifications(false,systemNotification);
                 }
 
             }
         }
 
-        LOGGER.info(String.format("%s: sended = %s, error = %s, skipped = %s (total checked = %s)", method, counter.getSuccess(), counter.getError(),
-                counter.getSkip(), counter.getTotal()));
+        LOGGER.info(String.format("[%s]sended=%s, error=%s, skipped=%s (total checked=%s)", method, counter.getSuccess(), counter.getError(), counter
+                .getSkip(), counter.getTotal()));
 
     }
 
@@ -1031,12 +1292,18 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         Long maxNotificationId = new Long(0);
 
         List<DBItemSchedulerMonNotifications> result = getDbLayer().getNotifications4NotifyNew(systemId);
-        LOGGER.info(String.format("%s: [%s] found %s new notifications in the db", method, systemId, result.size()));
+        LOGGER.info(String.format("[%s]found=%s", method, result.size()));
         initSendCounters();
 
         ArrayList<String> checkedJobchans = new ArrayList<String>();
+        int c = 0;
         for (DBItemSchedulerMonNotifications notification : result) {
+            c++;
             counter.addTotal();
+
+            if (isDebugEnabled) {
+                LOGGER.debug(String.format("[%s][%s]%s", method, c, NotificationModel.toString(notification)));
+            }
 
             String identifier = notification.getOrderHistoryId().toString();
 
@@ -1049,55 +1316,70 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
                 if (!checkedJobchans.contains(identifier)) {
                     checkedJobchans.add(identifier);
                     for (int i = 0; i < monitorJobChains.size(); i++) {
-                        counter.addTotal();
+                        // counter.addTotal();
 
                         ElementNotificationJobChain jc = monitorJobChains.get(i);
-                        if (checkDoNotification(notification, jc)) {
-                            executeNotifyJobChain(null, systemId, notification, jc);
+                        if (checkDoNotify(c, notification, jc)) {
+                            executeNotifyJobChain(c, null, systemId, notification, jc);
                         } else {
-                            counter.addSkip();
+                            // counter.addSkip();
                         }
+                    }
+                } else {
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("[%s][%s][skip][step=1]order history id=%s already processed", method, c, notification.getStep(),
+                                identifier));
                     }
                 }
             } else {
                 if (checkedJobchans.contains(identifier)) {
                     counter.addSkip();
-                    LOGGER.debug(String
-                            .format("%s: [%s] skip analyze JobChain notification (step greater than 1). notification.id = %s, notification.jobChainName = %s, notification.step = %s, notification.orderStepState = %s",
-                                    method, systemId, notification.getId(), notification.getJobChainName(), notification.getStep(),
-                                    notification.getOrderStepState()));
+                    if (isDebugEnabled) {
+                        LOGGER.debug(String.format("[%s][%s][skip][step %s > 1]order history id=%s already processed", method, c, notification
+                                .getStep(), identifier));
+                    }
+
                 } else {
                     checkedJobchans.add(identifier);
-                    DBItemSchedulerMonNotifications n = getDbLayer().getNotificationFirstStep(notification);
-                    if (n != null) {
-                        for (int i = 0; i < monitorJobChains.size(); i++) {
-                            counter.addTotal();
 
-                            ElementNotificationJobChain jc = monitorJobChains.get(i);
-                            if (checkDoNotification(n, jc)) {
-                                executeNotifyJobChain(null, systemId, n, jc);
-                            } else {
-                                counter.addSkip();
+                    DBItemSchedulerMonNotifications n = null;
+                    for (int i = 0; i < monitorJobChains.size(); i++) {
+                        // counter.addTotal();
+
+                        ElementNotificationJobChain jc = monitorJobChains.get(i);
+                        if (checkDoNotify(c, notification, jc)) {
+                            if (n == null) {
+                                n = getDbLayer().getNotificationFirstStep(notification);
                             }
+                            if (n == null) {
+                                counter.addSkip();
+                                LOGGER.info(String.format("[%s][%s][skip][!!!first step not found in the database]%s", method, c, NotificationModel
+                                        .toString(notification)));
+                                break;
+                            } else {
+                                executeNotifyJobChain(c, null, systemId, n, jc);
+                            }
+                        } else {
+                            // counter.addSkip();
                         }
                     }
                 }
             }
 
             for (int i = 0; i < monitorJobs.size(); i++) {
-                counter.addTotal();
+                // counter.addTotal();
 
                 ElementNotificationJob job = monitorJobs.get(i);
-                if (checkDoNotification(notification, job)) {
-                    executeNotifyJob(null, systemId, notification, job);
+                if (checkDoNotify(c, notification, job)) {
+                    executeNotifyJob(c, null, systemId, notification, job);
                 } else {
-                    counter.addSkip();
+                    // counter.addSkip();
                 }
             }
         }
 
-        LOGGER.info(String.format("%s: sended = %s, error = %s, skipped = %s (total checked = %s)", method, counter.getSuccess(), counter.getError(),
-                counter.getSkip(), counter.getTotal()));
+        LOGGER.info(String.format("[%s]sended=%s, error=%s, skipped=%s (total checked=%s)", method, counter.getSuccess(), counter.getError(), counter
+                .getSkip(), counter.getTotal()));
 
         if (maxNotificationId > 0 && counter.getError() == 0) {
             insertDummySysNotification(systemId, maxNotificationId);
