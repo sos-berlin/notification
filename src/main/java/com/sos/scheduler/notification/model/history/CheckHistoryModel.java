@@ -82,7 +82,7 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
         File dir = null;
         File schemaFile = new File(options.schema_configuration_file.getValue());
         if (!schemaFile.exists()) {
-            throw new Exception(String.format("[%s][schema file not found]%s", method, schemaFile.getAbsolutePath()));
+            throw new Exception(String.format("[%s][schema file not found]%s", method, schemaFile.getCanonicalPath()));
         }
         if (SOSString.isEmpty(this.options.configuration_dir.getValue())) {
             dir = new File(this.options.configuration_dir.getValue());
@@ -90,10 +90,10 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
             dir = schemaFile.getParentFile().getAbsoluteFile();
         }
         if (!dir.exists()) {
-            throw new Exception(String.format("[%s][configuration dir not found]%s", method, dir.getAbsolutePath()));
+            throw new Exception(String.format("[%s][configuration dir not found]%s", method, dir.getCanonicalPath()));
         }
         if (isDebugEnabled) {
-            LOGGER.debug(String.format("[%s][%s][%s]", method, schemaFile, dir.getAbsolutePath()));
+            LOGGER.debug(String.format("[%s][%s][%s]", method, schemaFile, dir.getCanonicalPath()));
         }
         readConfigFiles(dir);
     }
@@ -106,12 +106,17 @@ public class CheckHistoryModel extends NotificationModel implements INotificatio
         checkInsertNotifications = true;
         File[] files = getAllConfigurationFiles(dir);
         if (files.length == 0) {
-            throw new Exception(String.format("[%s][configuration files not found]%s", method, dir.getAbsolutePath()));
+            throw new Exception(String.format("[%s][configuration files not found]%s", method, dir.getCanonicalPath()));
         }
         for (int i = 0; i < files.length; i++) {
             File f = files[i];
-            LOGGER.info(String.format("[%s][%s]%s", method, (i + 1), f.getAbsolutePath()));
-            SOSXMLXPath xpath = new SOSXMLXPath(f.getAbsolutePath());
+            LOGGER.info(String.format("[%s][%s]%s", method, (i + 1), f.getCanonicalPath()));
+            SOSXMLXPath xpath = null;
+            try {
+                xpath = new SOSXMLXPath(f.getCanonicalPath());
+            } catch (Exception e) {
+                throw new Exception(String.format("[%s][SOSXMLXPath]%s", method, e.toString()), e);
+            }
             setConfigAllJobChains(xpath);
             setConfigAllJobs(xpath);
             setConfigTimers(xpath);
