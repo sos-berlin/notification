@@ -2,7 +2,6 @@ package com.sos.scheduler.notification.model.cleanup;
 
 import java.util.Date;
 
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,18 +24,13 @@ public class CleanupNotificationsModel extends NotificationModel implements INot
 
     @Override
     public void process() throws Exception {
-        String method = "process";
         try {
-            DateTime start = new DateTime();
-
             int minutes = NotificationModel.resolveAge2Minutes(this.options.age.getValue());
             Date date = DBLayerSchedulerMon.getCurrentDateTimeMinusMinutes(minutes);
             
             getDbLayer().getConnection().beginTransaction();
             getDbLayer().cleanupNotifications(date);
             getDbLayer().getConnection().commit();
-
-            logger.info(String.format("%s: duration = %s", method, NotificationModel.getDuration(start, new DateTime())));
         } catch (Exception ex) {
             getDbLayer().getConnection().rollback();
             throw ex;

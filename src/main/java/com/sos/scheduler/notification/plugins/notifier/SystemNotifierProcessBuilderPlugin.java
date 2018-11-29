@@ -75,8 +75,8 @@ public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
                 }
             }
 
-            logger.info(String.format("[%s][%s][command][resolved]%s", servicePrefix, serviceStatus, resolveEnvVars(env, getCommand())));
-            logger.info(String.format("[%s][%s][command][to execute]%s", servicePrefix, serviceStatus, pb.command()));
+            logger.info(String.format("[%s-%s][command][resolved]%s", serviceStatus, servicePrefix, resolveEnvVars(env, getCommand())));
+            logger.info(String.format("[%s-%s][command][to execute]%s", serviceStatus, servicePrefix, pb.command()));
 
             p = pb.start();
             if (p.waitFor() != 0) {
@@ -133,7 +133,7 @@ public class SystemNotifierProcessBuilderPlugin extends SystemNotifierPlugin {
                 }
             }
 
-            logger.info(String.format("[%s][%s][command][executed]exitCode=%s", servicePrefix, serviceStatus, exitCode));
+            logger.info(String.format("[%s-%s][command][executed]exitCode=%s", serviceStatus, servicePrefix, exitCode));
 
             return exitCode;
         } catch (Exception ex) {
