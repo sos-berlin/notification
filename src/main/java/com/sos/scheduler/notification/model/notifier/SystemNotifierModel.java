@@ -585,8 +585,8 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
                 counter.addSkip();
 
                 if (isDebugEnabled) {
-                    LOGGER.debug(String.format("[%s][%s][%s][skip][notifyOnError=%s]checkDoNotifyByReturnCodes=false", method, notifyMsg,
-                            serviceName, notifyOnError));
+                    LOGGER.debug(String.format("[%s][%s][%s][skip][notifyOnError=%s]checkDoNotifyByReturnCodes=false", method, notifyMsg, serviceName,
+                            notifyOnError));
                 }
 
                 return;
@@ -764,7 +764,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             if (notifyOnError && sm.getSuccess()) {
                 counter.addSkip();
                 if (isDebugEnabled) {
-                    LOGGER.debug(String.format("%s[%s][%s][skip][notifyAgain]is notifyOnError but system notification has succes=1", method,
+                    LOGGER.debug(String.format("%s[%s][%s][notifyAgain][skip]is notifyOnError but system notification has succes=1", method,
                             notifyMsg, serviceName));
                 }
                 return;
@@ -773,7 +773,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             if (!notifyOnError && !sm.getSuccess()) {
                 counter.addSkip();
                 if (isDebugEnabled) {
-                    LOGGER.debug(String.format("%s[%s][%s][skip][notifyAgain]is notifyOnSuccess but system notification has succes=0", method,
+                    LOGGER.debug(String.format("%s[%s][%s][notifyAgain][skip]is notifyOnSuccess but system notification has succes=0", method,
                             notifyMsg, serviceName));
                 }
                 return;
@@ -807,7 +807,8 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         }
 
         if (isDebugEnabled) {
-            LOGGER.debug(String.format("%s[%s][%s][isNew=%s]%s", method, notifyMsg, serviceName, isNew, NotificationModel.toString(sm)));
+            LOGGER.debug(String.format("%s[%s][%s][isNew=%s][isNotifyAgain=%s]%s", method, notifyMsg, serviceName, isNew, isNotifyAgain,
+                    NotificationModel.toString(sm)));
         }
 
         if (!isNotifyAgain) {
@@ -842,24 +843,27 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             }
             return;
         }
-        if (isDebugEnabled) {
-            LOGGER.debug(String.format("%s[%s][%s][isNew=%s][getLastStepForNotification]%s", method, notifyMsg, serviceName, isNew, NotificationModel
-                    .toString(jcn.getLastStepForNotification())));
-        }
 
         DBItemSchedulerMonNotifications notification2send = null;
+        DBItemSchedulerMonNotifications notificationLastStep = jcn.getLastStepForNotification();
         DBItemSchedulerMonSystemResults lastErrorSended = null;
+
+        if (isDebugEnabled) {
+            LOGGER.debug(String.format("%s[%s][%s][isNew=%s][notificationLastStep]%s", method, notifyMsg, serviceName, isNew, NotificationModel
+                    .toString(notificationLastStep)));
+        }
+
         if (notifyOnError) {
             lastErrorSended = getDbLayer().getSystemResultLastStep(largeResultFetchSize, sm.getId());
 
-            if (jcn.getLastStepForNotification().getError()) {
+            if (notificationLastStep.getError()) {
                 if (lastErrorSended != null) {
                     if (isDebugEnabled) {
                         LOGGER.debug(String.format("%s[%s][%s][onError][lastErrorSended]%s", method, notifyMsg, serviceName, NotificationModel
                                 .toString(lastErrorSended)));
                     }
 
-                    if (lastErrorSended.getOrderStepState().equals(jcn.getLastStepForNotification().getOrderStepState())) {
+                    if (lastErrorSended.getOrderStepState().equals(notificationLastStep.getOrderStepState())) {
                         if (lastErrorSended.getCurrentNotification() >= notifications) {
                             counter.addSkip();
 
@@ -869,8 +873,8 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
                                         notifications));
                             }
 
-                            if (notification.getOrderEndTime() != null) {
-                                closeSystemNotification(sm, notification.getOrderEndTime());
+                            if (notificationLastStep.getOrderEndTime() != null) {
+                                closeSystemNotification(sm, notificationLastStep.getOrderEndTime());
                                 if (isDebugEnabled) {
                                     LOGGER.debug(String.format(
                                             "%s[%s][%s][onError][close]count notifications was reached and orderEndTime is not null", method,
@@ -882,12 +886,12 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
                     } else {
                         if (isDebugEnabled) {
                             LOGGER.debug(String.format("%s[%s][%s][onError][state changed]%s -> %s", method, notifyMsg, serviceName, lastErrorSended
-                                    .getOrderStepState(), jcn.getLastStepForNotification().getOrderStepState()));
+                                    .getOrderStepState(), notificationLastStep.getOrderStepState()));
                         }
                         lastErrorSended = null;
                     }
                 }
-                notification2send = jcn.getLastStepForNotification();
+                notification2send = notificationLastStep;
             } else {
                 // check for recovery
                 if (lastErrorSended != null) {
@@ -901,11 +905,11 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
                                     serviceName));
                         }
                     } else {
-                        if (jcn.getLastStepForNotification().getId() > lastErrorSended.getNotificationId()) {
+                        if (notificationLastStep.getId() > lastErrorSended.getNotificationId()) {
 
                             boolean setRecovery = true;
-                            if (lastErrorSended.getOrderStepState().equals(jcn.getLastStepForNotification().getOrderStepState())) {
-                                if (jcn.getLastStepForNotification().getOrderStepEndTime() == null) {
+                            if (lastErrorSended.getOrderStepState().equals(notificationLastStep.getOrderStepState())) {
+                                if (notificationLastStep.getOrderStepEndTime() == null) {
                                     if (isDebugEnabled) {
                                         LOGGER.debug(String.format("%s[%s][%s][onNoError][skip][recovery][%s]state rerun is not completed", method,
                                                 notifyMsg, serviceName, lastErrorSended.getOrderStepState()));
@@ -927,7 +931,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
                         } else {
                             if (isDebugEnabled) {
                                 LOGGER.debug(String.format("%s[%s][%s][onNoError][skip][recovery]lastStep %s <= lastErrorSended %s", method,
-                                        notifyMsg, serviceName, jcn.getLastStepForNotification().getId(), lastErrorSended.getNotificationId()));
+                                        notifyMsg, serviceName, notificationLastStep.getId(), lastErrorSended.getNotificationId()));
                             }
                         }
                     }
@@ -945,11 +949,14 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
                 }
 
                 if (isNotifyAgain) {
-                    if (notification.getOrderEndTime() != null) {
-                        closeSystemNotification(sm, notification.getOrderEndTime());
+                    if (notificationLastStep.getOrderEndTime() != null) {
+                        closeSystemNotification(sm, notificationLastStep.getOrderEndTime());
                         if (isDebugEnabled) {
-                            LOGGER.debug(String.format("%s[%s][%s][close][notification2send is null]orderEndTime is not null", method, notifyMsg,
-                                    serviceName));
+                            LOGGER.debug(String.format("%s[%s][%s][notifyAgain][close]orderEndTime is not null", method, notifyMsg, serviceName));
+                        }
+                    } else {
+                        if (isDebugEnabled) {
+                            LOGGER.debug(String.format("%s[%s][%s][notifyAgain][not close]orderEndTime is null", method, notifyMsg, serviceName));
                         }
                     }
                 }
@@ -993,7 +1000,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             lastErrorSended.setCurrentNotification(lastErrorSended.getCurrentNotification() + 1);
             sm.setCurrentNotification(sm.getCurrentNotification() + 1);
 
-            if (notification.getOrderEndTime() != null) {
+            if (notificationLastStep.getOrderEndTime() != null) {
                 if (lastErrorSended != null) {
                     if (lastErrorSended.getCurrentNotification() >= notifications) {
                         maxNotifications = true;
@@ -1004,24 +1011,24 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
         }// notifyOnError
         else {// success
             lastErrorSended = null;
-            if (notification.getOrderEndTime() == null) {
+            if (notificationLastStep.getOrderEndTime() == null) {
                 counter.addSkip();
                 if (isDebugEnabled) {
                     LOGGER.debug(String.format("%s[%s][%s][skip]notification orderEndTime is null", method, notifyMsg, serviceName));
                 }
                 return;
             } else {
-                if (jcn.getLastStepForNotification().getError()) {
+                if (notificationLastStep.getError()) {
                     counter.addSkip();
-                    closeSystemNotification(sm, notification.getOrderEndTime());
+                    closeSystemNotification(sm, notificationLastStep.getOrderEndTime());
                     if (isDebugEnabled) {
-                        LOGGER.debug(String.format("%s[%s][%s][skip][close][lastStepForNotification ends with error]orderEndTime is not null", method,
+                        LOGGER.debug(String.format("%s[%s][%s][skip][close][notificationLastStep ends with an error]orderEndTime is not null", method,
                                 notifyMsg, serviceName));
                     }
                     return;
                 }
             }
-            notification2send = jcn.getLastStepForNotification();
+            notification2send = notificationLastStep;
 
             if (hasReturnCodes && !checkDoNotifyByReturnCodes(notification2send, serviceName, notifyMsg, jobChain.getName(), returnCodeFrom,
                     returnCodeTo)) {
