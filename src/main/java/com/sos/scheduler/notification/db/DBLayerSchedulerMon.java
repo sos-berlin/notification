@@ -154,45 +154,28 @@ public class DBLayerSchedulerMon extends DBLayer {
 
             LOGGER.info(String.format("[%s]delete <= %s", method, DBLayer.getDateAsString(date)));
 
-            StringBuilder sql = new StringBuilder(DELETE_FROM);
-            sql.append(DBITEM_SCHEDULER_MON_NOTIFICATIONS);
-            sql.append(" where created <= :date");
-            int count = getConnection().createQuery(sql.toString()).setTimestamp("date", date).executeUpdate();
+            String hql = String.format("delete from %s where created <= :date", DBITEM_SCHEDULER_MON_NOTIFICATIONS);
+            int count = getConnection().createQuery(hql.toString()).setParameter("date", date).executeUpdate();
             LOGGER.info(String.format("[%s][%s]%s", method, TABLE_SCHEDULER_MON_NOTIFICATIONS, count));
 
-            String whereNotificationIdNotIn = " where notificationId not in (select id from " + DBITEM_SCHEDULER_MON_NOTIFICATIONS + ")";
+            String notificationIdNotIn = String.format("notificationId not in (select id from %s)", DBITEM_SCHEDULER_MON_NOTIFICATIONS);
 
-            sql = new StringBuilder(DELETE_FROM);
-            sql.append(DBITEM_SCHEDULER_MON_RESULTS);
-            sql.append(whereNotificationIdNotIn);
-            count = getConnection().createQuery(sql.toString()).executeUpdate();
+            hql = String.format("delete from %s where %s", DBITEM_SCHEDULER_MON_RESULTS, notificationIdNotIn);
+            count = getConnection().createQuery(hql.toString()).executeUpdate();
             LOGGER.info(String.format("[%s][%s]%s", method, TABLE_SCHEDULER_MON_RESULTS, count));
 
-            sql = new StringBuilder(DELETE_FROM);
-            sql.append(DBITEM_SCHEDULER_MON_CHECKS);
-            sql.append(whereNotificationIdNotIn);
-            count = getConnection().createQuery(sql.toString()).executeUpdate();
+            hql = String.format("delete from %s where %s", DBITEM_SCHEDULER_MON_CHECKS, notificationIdNotIn);
+            count = getConnection().createQuery(hql.toString()).executeUpdate();
             LOGGER.info(String.format("[%s][%s]%s", method, TABLE_SCHEDULER_MON_CHECKS, count));
 
-            sql = new StringBuilder(DELETE_FROM);
-            sql.append(DBITEM_SCHEDULER_MON_SYSNOTIFICATIONS);
-            sql.append(" where objectType != ");
-            sql.append(DBLayer.NOTIFICATION_OBJECT_TYPE_DUMMY);
-            sql.append(" and notificationId not in (select id from " + DBITEM_SCHEDULER_MON_NOTIFICATIONS + ") ");
-            int countS1 = getConnection().createQuery(sql.toString()).executeUpdate();
-
-            sql = new StringBuilder(DELETE_FROM);
-            sql.append(DBITEM_SCHEDULER_MON_SYSNOTIFICATIONS);
-            sql.append(" where checkId > 0");
-            sql.append(" and checkId not in (select id from " + DBITEM_SCHEDULER_MON_CHECKS + ")");
-            int countS2 = getConnection().createQuery(sql.toString()).executeUpdate();
-            count = countS1 + countS2;
+            hql = String.format("delete from %s where objectType != %s and %s", DBITEM_SCHEDULER_MON_SYSNOTIFICATIONS,
+                    DBLayer.NOTIFICATION_OBJECT_TYPE_DUMMY, notificationIdNotIn);
+            count = getConnection().createQuery(hql.toString()).executeUpdate();
             LOGGER.info(String.format("[%s][%s]%s", method, TABLE_SCHEDULER_MON_SYSNOTIFICATIONS, count));
 
-            sql = new StringBuilder(DELETE_FROM);
-            sql.append(DBITEM_SCHEDULER_MON_SYSRESULTS);
-            sql.append(" where sysNotificationId not in (select id from " + DBITEM_SCHEDULER_MON_SYSNOTIFICATIONS + ") ");
-            count = getConnection().createQuery(sql.toString()).executeUpdate();
+            hql = String.format("delete from %s where sysNotificationId not in (select id from %s)", DBITEM_SCHEDULER_MON_SYSRESULTS,
+                    DBITEM_SCHEDULER_MON_SYSNOTIFICATIONS);
+            count = getConnection().createQuery(hql.toString()).executeUpdate();
             LOGGER.info(String.format("[%s][%s]%s", method, TABLE_SCHEDULER_MON_SYSRESULTS, count));
 
         } catch (Exception ex) {
