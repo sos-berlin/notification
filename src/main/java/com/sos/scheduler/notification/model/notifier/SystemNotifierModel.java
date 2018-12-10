@@ -448,8 +448,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             }
             Long stepFromIndex = new Long(0);
             Long stepToIndex = new Long(0);
-            List<DBItemSchedulerMonNotifications> steps = this.getDbLayer().getOrderNotifications(largeResultFetchSize, notification
-                    .getOrderHistoryId());
+            List<DBItemSchedulerMonNotifications> steps = this.getDbLayer().getOrderNotifications(largeResultFetchSize, notification);
             if (steps == null || steps.isEmpty()) {
                 if (isDebugEnabled) {
                     LOGGER.debug(String.format("%s[no steps found for orderHistoryId=%s]%s", method, notification.getOrderHistoryId(),
@@ -480,9 +479,8 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
             if (stepFrom != null && !stepFrom.equals(DBLayerSchedulerMon.DEFAULT_EMPTY_NAME) && jcn.getStepFrom() == null) {
                 jcn.setSteps(null);
                 if (isDebugEnabled) {
-                    LOGGER.debug(String.format(
-                            "%s can't set setLastStepForNotification. configured step_from \"%s\" not founded in the notification table.", method,
-                            stepFrom));
+                    LOGGER.debug(String.format("%s[setLastStepForNotification][configured step_from \"%s\" not found]%s", method, stepFrom,
+                            NotificationModel.toString(notification)));
                 }
             } else {
                 for (DBItemSchedulerMonNotifications step : jcn.getSteps()) {
@@ -494,10 +492,10 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 
         } else {
             if (isDebugEnabled) {
-                LOGGER.debug(String.format("%s get last step from db", method));
+                LOGGER.debug(String.format("%s getNotificationMaxStep", method));
             }
 
-            jcn.setLastStepForNotification(getDbLayer().getNotificationsOrderLastStep(largeResultFetchSize, notification, false));
+            jcn.setLastStepForNotification(getDbLayer().getNotificationMaxStep(largeResultFetchSize, notification, false));
             jcn.setStepFrom(notification);
             if (jcn.getLastStepForNotification() != null) {
                 jcn.setStepTo(jcn.getLastStepForNotification());
@@ -838,6 +836,7 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 
         JobChainNotification jcn = getJobChainNotification(currentCounter, notification, jobChain);
         if (jcn.getLastStepForNotification() == null) {
+            counter.addSkip();
             if (isDebugEnabled) {
                 LOGGER.debug(String.format("%s[%s][%s][skip][isNew=%s]getLastStepForNotification=null", method, notifyMsg, serviceName, isNew));
             }
@@ -938,6 +937,10 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
                 } else {
                     if (isDebugEnabled) {
                         LOGGER.debug(String.format("%s[%s][%s][onNoError][skip][recovery]lastErrorSended not found", method, notifyMsg, serviceName));
+                        if (notificationLastStep.getOrderStepEndTime() == null) {
+                            LOGGER.debug(String.format("%s[%s][%s][onNoError][skip][details]notificationLastStep is not completed", method, notifyMsg,
+                                    serviceName));
+                        }
                     }
                 }
             }
@@ -1355,23 +1358,26 @@ public class SystemNotifierModel extends NotificationModel implements INotificat
 
                     DBItemSchedulerMonNotifications n = null;
                     for (int i = 0; i < monitorJobChains.size(); i++) {
-                        // counter.addTotal();
-
                         ElementNotificationJobChain jc = monitorJobChains.get(i);
                         if (checkDoNotify(c, notification, jc)) {
                             if (n == null) {
                                 n = getDbLayer().getNotificationFirstStep(notification);
+                                if (n == null) {
+                                    if (isDebugEnabled) {
+                                        LOGGER.debug(String.format("[%s][%s][first step not found in the database]try to find a min step. %s", method,
+                                                c, NotificationModel.toString(notification)));
+                                    }
+                                    n = getDbLayer().getNotificationMinStep(notification);
+                                }
                             }
                             if (n == null) {
                                 counter.addSkip();
-                                LOGGER.info(String.format("[%s][%s][skip][!!!first step not found in the database]%s", method, c, NotificationModel
-                                        .toString(notification)));
+                                LOGGER.info(String.format("[%s][%s][skip][!!!first step and min step not found in the database]%s", method, c,
+                                        NotificationModel.toString(notification)));
                                 break;
                             } else {
                                 executeNotifyJobChain(c, null, systemId, n, jc);
                             }
-                        } else {
-                            // counter.addSkip();
                         }
                     }
                 }
